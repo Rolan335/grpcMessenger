@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package messenger;
+
+option go_package = "/;proto";
+
+message InitSessionRequest {
+}
+
+message InitSessionResponse {
+    string session_uuid = 1;
+}
+
+message CreateChatRequest {
+    string session_uuid = 1;
+    int32 ttl = 2;
+    bool read_only = 3;
+}
+
+message CreateChatResponse {
+    string chat_uuid = 1;
+}
+
+message SendMessageRequest {
+    string chat_uuid = 1;
+    string session_uuid = 2;
+    string message = 3;
+}
+
+message SendMessageResponse {
+}
+
+message GetHistoryRequest {
+    string chat_uuid = 1;
+}
+
+message GetHistoryResponse {
+    string history_json = 1;
+}
+
+service ChatService {
+    rpc InitSession(InitSessionRequest) returns (InitSessionResponse);
+    rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
+    rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+    rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse);
+}
+
+//protoc --proto_path=. --go_out=. --go-grpc_out=. --go_opt=paths=source_relative messenger.proto
