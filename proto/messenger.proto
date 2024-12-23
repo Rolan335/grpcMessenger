@@ -38,7 +38,7 @@ message GetHistoryResponse {
     string history_json = 1;
 }
 
-service ChatService {
+service MessengerService {
     rpc InitSession(InitSessionRequest) returns (InitSessionResponse);
     rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
     rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
