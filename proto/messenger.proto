@@ -34,8 +34,14 @@ message GetHistoryRequest {
     string chat_uuid = 1;
 }
 
+message ChatMessage{
+    string session_uuid = 1;
+    string message_uuid = 2;
+    string text = 3;
+}
+
 message GetHistoryResponse {
-    string history_json = 1;
+    repeated ChatMessage messages = 1;
 }
 
 service MessengerService {
