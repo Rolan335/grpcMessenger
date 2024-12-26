@@ -1,14 +1,18 @@
 package config
 
-type AppCfg struct {
+//Config that provided from flags at start
+type ServiceCfg struct {
 	Port        string
+	Env         string
 	MaxChatSize int
 	MaxChats    int
 }
 
-func AppInit(port string, maxChatSize int, maxChats int) AppCfg {
-	return AppCfg{
+//Initializing Config
+func ServiceInit(port string, env string, maxChatSize int, maxChats int) ServiceCfg {
+	return ServiceCfg{
 		Port:        port,
+		Env:         env,
 		MaxChatSize: maxChatSize,
 		MaxChats:    maxChats,
 	}
