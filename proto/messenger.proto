@@ -11,14 +11,10 @@ message InitSessionResponse {
     string session_uuid = 1;
 }
 
-message Chat{
+message CreateChatRequest {
     string session_uuid = 1;
     int32 ttl = 2;
     bool read_only = 3;
-}
-
-message CreateChatRequest {
-    Chat chat = 1;
 }
 
 message CreateChatResponse {
@@ -49,6 +45,13 @@ message GetHistoryResponse {
 }
 
 message GetActiveChatsRequest{
+}
+
+message Chat{
+    string chat_uuid = 1;
+    string session_uuid = 2;
+    string ttl = 3;
+    string read_only = 4;
 }
 
 message GetActiveChatsResponse{
