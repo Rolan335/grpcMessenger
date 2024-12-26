@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MessengerService_InitSession_FullMethodName = "/messenger.MessengerService/InitSession"
-	MessengerService_CreateChat_FullMethodName  = "/messenger.MessengerService/CreateChat"
-	MessengerService_SendMessage_FullMethodName = "/messenger.MessengerService/SendMessage"
-	MessengerService_GetHistory_FullMethodName  = "/messenger.MessengerService/GetHistory"
+	MessengerService_InitSession_FullMethodName    = "/messenger.MessengerService/InitSession"
+	MessengerService_CreateChat_FullMethodName     = "/messenger.MessengerService/CreateChat"
+	MessengerService_SendMessage_FullMethodName    = "/messenger.MessengerService/SendMessage"
+	MessengerService_GetHistory_FullMethodName     = "/messenger.MessengerService/GetHistory"
+	MessengerService_GetActiveChats_FullMethodName = "/messenger.MessengerService/GetActiveChats"
 )
 
 // MessengerServiceClient is the client API for MessengerService service.
@@ -33,6 +34,7 @@ type MessengerServiceClient interface {
 	CreateChat(ctx context.Context, in *CreateChatRequest, opts ...grpc.CallOption) (*CreateChatResponse, error)
 	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*SendMessageResponse, error)
 	GetHistory(ctx context.Context, in *GetHistoryRequest, opts ...grpc.CallOption) (*GetHistoryResponse, error)
+	GetActiveChats(ctx context.Context, in *GetActiveChatsRequest, opts ...grpc.CallOption) (*GetActiveChatsResponse, error)
 }
 
 type messengerServiceClient struct {
@@ -83,6 +85,16 @@ func (c *messengerServiceClient) GetHistory(ctx context.Context, in *GetHistoryR
 	return out, nil
 }
 
+func (c *messengerServiceClient) GetActiveChats(ctx context.Context, in *GetActiveChatsRequest, opts ...grpc.CallOption) (*GetActiveChatsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetActiveChatsResponse)
+	err := c.cc.Invoke(ctx, MessengerService_GetActiveChats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MessengerServiceServer is the server API for MessengerService service.
 // All implementations must embed UnimplementedMessengerServiceServer
 // for forward compatibility.
@@ -91,6 +103,7 @@ type MessengerServiceServer interface {
 	CreateChat(context.Context, *CreateChatRequest) (*CreateChatResponse, error)
 	SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error)
 	GetHistory(context.Context, *GetHistoryRequest) (*GetHistoryResponse, error)
+	GetActiveChats(context.Context, *GetActiveChatsRequest) (*GetActiveChatsResponse, error)
 	mustEmbedUnimplementedMessengerServiceServer()
 }
 
@@ -112,6 +125,9 @@ func (UnimplementedMessengerServiceServer) SendMessage(context.Context, *SendMes
 }
 func (UnimplementedMessengerServiceServer) GetHistory(context.Context, *GetHistoryRequest) (*GetHistoryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetHistory not implemented")
+}
+func (UnimplementedMessengerServiceServer) GetActiveChats(context.Context, *GetActiveChatsRequest) (*GetActiveChatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetActiveChats not implemented")
 }
 func (UnimplementedMessengerServiceServer) mustEmbedUnimplementedMessengerServiceServer() {}
 func (UnimplementedMessengerServiceServer) testEmbeddedByValue()                          {}
@@ -206,6 +222,24 @@ func _MessengerService_GetHistory_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MessengerService_GetActiveChats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetActiveChatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessengerServiceServer).GetActiveChats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessengerService_GetActiveChats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessengerServiceServer).GetActiveChats(ctx, req.(*GetActiveChatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MessengerService_ServiceDesc is the grpc.ServiceDesc for MessengerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,6 +262,10 @@ var MessengerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetHistory",
 			Handler:    _MessengerService_GetHistory_Handler,
+		},
+		{
+			MethodName: "GetActiveChats",
+			Handler:    _MessengerService_GetActiveChats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
