@@ -6,12 +6,13 @@ import (
 	"errors"
 
 	"github.com/Rolan335/grpcMessenger/proto"
-	chatttl "github.com/Rolan335/grpcMessenger/server/internal/chatTtl"
+	"github.com/Rolan335/grpcMessenger/server/internal/chatttl"
 	"github.com/Rolan335/grpcMessenger/server/internal/config"
 	"github.com/Rolan335/grpcMessenger/server/internal/logger"
 	"github.com/Rolan335/grpcMessenger/server/internal/serviceErrors"
 	"github.com/Rolan335/grpcMessenger/server/internal/storage"
 	"github.com/Rolan335/grpcMessenger/server/internal/util/checkuuid"
+
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -57,7 +58,7 @@ func (s Server) CreateChat(ctx context.Context, r *proto.CreateChatRequest) (*pr
 	id, _ := uuid.NewRandom()
 
 	//Add new chat to server storage
-	err := Storage.AddChat(r.SessionUuid, int(r.Ttl), r.ReadOnly, id.String())
+	err := Storage.AddChat(r.GetSessionUuid(), int(r.Ttl), r.ReadOnly, id.String())
 
 	//If nonExistent session-uuid provided - logging and returning error
 	if errors.Is(err, serviceErrors.ErrUserDoesNotExist) {
@@ -112,7 +113,7 @@ func (s Server) SendMessage(ctx context.Context, r *proto.SendMessageRequest) (*
 
 // Implementation of GetHistory rpc
 func (s Server) GetHistory(ctx context.Context, r *proto.GetHistoryRequest) (*proto.GetHistoryResponse, error) {
-    // if invalid chatUuid provided - request cannot be completed, return error
+	// if invalid chatUuid provided - request cannot be completed, return error
 	if !checkuuid.IsParsed(r.GetChatUuid()) {
 		errCreated := status.Error(codes.InvalidArgument, serviceErrors.ErrInvalidUuid.Error())
 		logger.LogRequestWithError(ctx, "GetHistory", r.String(), errCreated)
@@ -132,5 +133,12 @@ func (s Server) GetHistory(ctx context.Context, r *proto.GetHistoryRequest) (*pr
 	//Create response, log and send
 	response := &proto.GetHistoryResponse{Messages: history}
 	logger.LogRequest(ctx, "GetHistory", r.String(), "History for "+r.String()+" successfully sent")
+	return response, nil
+}
+
+func (s Server) GetActiveChats(ctx context.Context, r *proto.GetActiveChatsRequest) (*proto.GetActiveChatsResponse, error) {
+	chats := Storage.GetActiveChats()
+	response := &proto.GetActiveChatsResponse{Chats: chats}
+	logger.LogRequest(ctx, "GetActiveChats", r.String(), "Active chats successfully sent")
 	return response, nil
 }

@@ -50,8 +50,8 @@ message GetActiveChatsRequest{
 message Chat{
     string chat_uuid = 1;
     string session_uuid = 2;
-    string ttl = 3;
-    string read_only = 4;
+    int32 ttl = 3;
+    bool read_only = 4;
 }
 
 message GetActiveChatsResponse{

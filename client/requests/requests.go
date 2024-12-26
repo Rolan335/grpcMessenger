@@ -37,3 +37,11 @@ func GetHistory(ctx context.Context, c proto.MessengerServiceClient, req *proto.
 	}
 	return resp, nil
 }
+
+func GetActiveChats(ctx context.Context, c proto.MessengerServiceClient, req *proto.GetActiveChatsRequest) (*proto.GetActiveChatsResponse, error) {
+	resp, err := c.GetActiveChats(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

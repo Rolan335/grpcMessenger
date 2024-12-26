@@ -1,4 +1,4 @@
-//Function for deletion chats after provided period of time
+// Function for deletion chats after provided period of time
 package chatttl
 
 import (

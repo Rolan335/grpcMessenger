@@ -107,3 +107,21 @@ time=2024-12-26T18:37:20.738+03:00 level=INFO msg=SendMessage Request="session_u
 time=2024-12-26T18:37:40.958+03:00 level=INFO msg="started grpc server"
 time=2024-12-26T18:37:45.022+03:00 level=INFO msg=SendMessage Request="session_uuid:\"ipsum nulla ad\"" Error="rpc error: code = InvalidArgument desc = invalid uuid provided"
 time=2024-12-26T18:37:49.275+03:00 level=INFO msg=GetHistory Request="" Error="rpc error: code = InvalidArgument desc = invalid uuid provided"
+time=2024-12-26T18:45:39.149+03:00 level=INFO msg="started grpc server"
+time=2024-12-26T18:45:58.179+03:00 level=INFO msg=InitSession Request="" Response="session_uuid:\"10443f3d-8ef0-4f9d-97db-c9900687351c\""
+time=2024-12-26T18:46:08.054+03:00 level=INFO msg=CreateChat Request="session_uuid:\"10443f3d-8ef0-4f9d-97db-c9900687351c\"  ttl:100" Response="chat_uuid:\"0f990190-2069-4d63-a5df-d14b0a654c23\""
+time=2024-12-26T18:46:23.115+03:00 level=INFO msg=SendMessage Request="chat_uuid:\"0f990190-2069-4d63-a5df-d14b0a654c23\"  session_uuid:\"10443f3d-8ef0-4f9d-97db-c9900687351c\"  message:\".\"" Response=""
+time=2024-12-26T18:46:33.299+03:00 level=INFO msg=GetHistory Request="chat_uuid:\"0f990190-2069-4d63-a5df-d14b0a654c23\"" Response="History for chat_uuid:\"0f990190-2069-4d63-a5df-d14b0a654c23\" successfully sent"
+time=2024-12-26T18:47:48.054+03:00 level=INFO msg=DeleteChat sessionUuid=10443f3d-8ef0-4f9d-97db-c9900687351c chatUuid=0f990190-2069-4d63-a5df-d14b0a654c23
+time=2024-12-26T20:31:09.306+03:00 level=INFO msg="started grpc server"
+time=2024-12-26T20:31:19.209+03:00 level=INFO msg="started grpc server"
+time=2024-12-26T20:37:10.807+03:00 level=INFO msg=InitSession Request="" Response="session_uuid:\"ab883ed4-5217-40bf-8b35-0c42b3d2342a\""
+time=2024-12-26T20:37:52.449+03:00 level=INFO msg=InitSession Request="" Response="session_uuid:\"e33e892f-c98e-429b-894f-7700ad54c056\""
+time=2024-12-26T20:38:04.616+03:00 level=INFO msg=CreateChat Request="chat:{session_uuid:\"e33e892f-c98e-429b-894f-7700ad54c056\"}" Response="chat_uuid:\"55d9eb1f-f738-4a40-a230-531ee9ebd15e\""
+time=2024-12-26T20:38:10.507+03:00 level=INFO msg=CreateChat Request="chat:{session_uuid:\"e33e892f-c98e-429b-894f-7700ad54c056\"  ttl:4}" Response="chat_uuid:\"2539ab1b-096e-40d4-a477-e39dc5512a5e\""
+time=2024-12-26T20:38:14.508+03:00 level=INFO msg=DeleteChat sessionUuid=e33e892f-c98e-429b-894f-7700ad54c056 chatUuid=2539ab1b-096e-40d4-a477-e39dc5512a5e
+time=2024-12-26T20:38:17.941+03:00 level=INFO msg=GetActiveChats Request="" Response="Active chats successfully sent"
+time=2024-12-26T20:38:29.450+03:00 level=INFO msg=CreateChat Request="chat:{session_uuid:\"e33e892f-c98e-429b-894f-7700ad54c056\"  ttl:100}" Response="chat_uuid:\"06401813-86a8-48b2-9fc6-d26f6d5da696\""
+time=2024-12-26T20:38:34.548+03:00 level=INFO msg=GetActiveChats Request="" Response="Active chats successfully sent"
+time=2024-12-26T20:38:55.467+03:00 level=INFO msg=GetActiveChats Request="" Response="Active chats successfully sent"
+time=2024-12-26T20:40:09.451+03:00 level=INFO msg=DeleteChat sessionUuid=e33e892f-c98e-429b-894f-7700ad54c056 chatUuid=06401813-86a8-48b2-9fc6-d26f6d5da696

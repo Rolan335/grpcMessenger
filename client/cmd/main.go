@@ -13,7 +13,6 @@ import (
 )
 
 var UUID string
-var Chats map[string]struct{}
 
 func main() {
 	address := flag.String("addr", "localhost:50051", "enter address of the service [127.0.0.1:50051]")
@@ -43,18 +42,15 @@ func main() {
 			)
 			fmt.Println("Enter [ttl] [readonly]")
 			fmt.Scan(&ttl, &readOnly)
-			if ttl > 0{
-				
+			if ttl > 0 {
+
 			}
-			request := &proto.CreateChatRequest{SessionUuid: UUID, Ttl: int32(ttl), ReadOnly: readOnly}
-			resp, err := requests.CreateChat(ctx, c, request)
+			request := &proto.CreateChatRequest{Chat: &proto.Chat{SessionUuid: UUID, Ttl: int32(ttl), ReadOnly: readOnly}}
+			_, err := requests.CreateChat(ctx, c, request)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-			Chats[resp.GetChatUuid()] = struct{}{}
-			fmt.Println("Your active chats:")
-			fmt.Println(Chats)
 		case "sendmessage":
 			var (
 				chatUuid string
@@ -79,6 +75,14 @@ func main() {
 			fmt.Scan(&chatUuid)
 			request := &proto.GetHistoryRequest{ChatUuid: chatUuid}
 			resp, err := requests.GetHistory(ctx, c, request)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Println(resp.String())
+		case "getactivechats":
+			request := &proto.GetActiveChatsRequest{}
+			resp, err := requests.GetActiveChats(ctx, c, request)
 			if err != nil {
 				fmt.Println(err)
 				continue

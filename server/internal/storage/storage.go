@@ -11,4 +11,5 @@ type Storage interface {
 	DeleteChat(sessionUuid string, chatUuid string) error
 	AddMessage(sessionUuid string, chatUuid string, messageUuid string, message string) error
 	GetHistory(chatUuid string) (history []*proto.ChatMessage, err error)
+	GetActiveChats() (chats []*proto.Chat)
 }

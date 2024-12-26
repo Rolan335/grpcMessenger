@@ -163,3 +163,17 @@ func (s *InMemoryStorage) DeleteChat(sessionUuid string, chatUuid string) error 
 	s.ChatsData.Remove(chatUuid)
 	return nil
 }
+
+func (s *InMemoryStorage) GetActiveChats() (chats []*proto.Chat) {
+	chatKeys := s.ChatsData.Keys()
+	for _, key := range chatKeys {
+		chat, _ := s.ChatsData.Get(key)
+		chatAsserted := chat.(*Chat)
+		chats = append(chats, &proto.Chat{
+			SessionUuid: chatAsserted.SessionUuid,
+			Ttl:         int32(chatAsserted.ttl),
+			ReadOnly:    chatAsserted.Readonly,
+		})
+	}
+	return chats
+}
