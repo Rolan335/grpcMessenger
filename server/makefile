@@ -1,4 +1,4 @@
-.PHONY: build
+.PHONY: generate
 
-build:
-	go build -o server cmd/main.go
+generate:
+	go generate cmd/main.go

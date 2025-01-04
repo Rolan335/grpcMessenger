@@ -1,30 +1,24 @@
 package serverinit
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/Rolan335/grpcMessenger/proto"
 	"github.com/Rolan335/grpcMessenger/server/internal/config"
 	"github.com/Rolan335/grpcMessenger/server/internal/controller"
 	"github.com/Rolan335/grpcMessenger/server/internal/logger"
+	"github.com/Rolan335/grpcMessenger/server/proto"
+
 	"google.golang.org/grpc"
 )
 
 func Start(serverConfig config.ServiceCfg) {
-	//Logs are written to file, initializing logger
-	f, err := os.OpenFile("logs.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
-	if err != nil {
-		panic("cannot start logging " + err.Error())
-	}
-	defer f.Close()
-	logger.LoggerInit(serverConfig.Env, f)
-
 	//Starting tcp connection
-	lis, err := net.Listen("tcp", serverConfig.Port)
+	lis, err := net.Listen("tcp", serverConfig.PortGrpc)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -45,8 +39,13 @@ func Start(serverConfig config.ServiceCfg) {
 	}()
 	logger.Logger.Info("started grpc server")
 
+	//starting http router
+	ctx, cancel := context.WithCancel(context.Background())
+	go StartHttp(ctx, serverConfig)
+
 	//graceful stop implementation
 	<-stopSig
+	cancel()
 	s.GracefulStop()
 	logger.Logger.Info("server stopped")
 }

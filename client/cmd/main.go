@@ -32,10 +32,9 @@ func main() {
 	fmt.Println("Your session: ", UUID)
 	for {
 		var action string
-		_, err := fmt.Scan(&action)
-		if err != nil {
+		if _, err := fmt.Scan(&action); err != nil {
 			fmt.Println(err)
-            continue
+			continue
 		}
 		switch strings.ToLower(action) {
 		case "createchat":
@@ -44,10 +43,9 @@ func main() {
 				readOnly bool
 			)
 			fmt.Println("Enter [ttl] [readonly]")
-			_, err := fmt.Scan(&ttl, &readOnly)
-			if err != nil {
+			if _, err := fmt.Scan(&ttl, &readOnly); err != nil {
 				fmt.Println(err)
-                continue
+				continue
 			}
 			request := &proto.CreateChatRequest{SessionUuid: UUID, Ttl: int32(ttl), ReadOnly: readOnly}
 			resp, err := requests.CreateChat(ctx, c, request)
@@ -62,16 +60,14 @@ func main() {
 				message  string
 			)
 			fmt.Println("Enter chatUuid")
-			_, err := fmt.Scan(&chatUuid)
-			if err != nil {
+			if _, err := fmt.Scan(&chatUuid); err != nil {
 				fmt.Println(err)
-                continue
+				continue
 			}
 			fmt.Println("Enter your message")
-			_, err = fmt.Scan(&message)
-			if err != nil {
+			if _, err = fmt.Scan(&message); err != nil {
 				fmt.Println(err)
-                continue
+				continue
 			}
 			request := &proto.SendMessageRequest{SessionUuid: UUID, Message: message, ChatUuid: chatUuid}
 			_, err = requests.SendMessage(ctx, c, request)
@@ -85,10 +81,9 @@ func main() {
 				chatUuid string
 			)
 			fmt.Println("Enter chatUuid")
-			_, err := fmt.Scan(&chatUuid)
-			if err != nil {
+			if _, err := fmt.Scan(&chatUuid); err != nil {
 				fmt.Println(err)
-                continue
+				continue
 			}
 			request := &proto.GetHistoryRequest{ChatUuid: chatUuid}
 			resp, err := requests.GetHistory(ctx, c, request)

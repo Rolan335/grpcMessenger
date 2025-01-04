@@ -5,13 +5,13 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Rolan335/grpcMessenger/proto"
 	"github.com/Rolan335/grpcMessenger/server/internal/chatttl"
 	"github.com/Rolan335/grpcMessenger/server/internal/config"
 	"github.com/Rolan335/grpcMessenger/server/internal/logger"
 	"github.com/Rolan335/grpcMessenger/server/internal/serviceErrors"
 	"github.com/Rolan335/grpcMessenger/server/internal/storage"
 	"github.com/Rolan335/grpcMessenger/server/internal/util/checkuuid"
+	"github.com/Rolan335/grpcMessenger/server/proto"
 
 	"github.com/google/uuid"
 )

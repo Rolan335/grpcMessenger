@@ -26,7 +26,7 @@ func clientInit() (proto.MessengerServiceClient, *grpc.ClientConn) {
 }
 
 func startClientAndServer(maxChatSize int, maxChats int) (proto.MessengerServiceClient, *grpc.ClientConn) {
-	go serverinit.Start(config.ServiceCfg{Port: ":50051", Env: "dev", MaxChatSize: maxChatSize, MaxChats: maxChats})
+	go serverinit.Start(config.ServiceCfg{PortGrpc: ":50051", Env: "dev", MaxChatSize: maxChatSize, MaxChats: maxChats})
 	return clientInit()
 }
 

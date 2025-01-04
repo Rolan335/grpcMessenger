@@ -2,16 +2,20 @@ package config
 
 //Config that provided from flags at start
 type ServiceCfg struct {
-	Port        string
+	Address     string
+	PortGrpc    string
+	PortHttp    string
 	Env         string
 	MaxChatSize int
 	MaxChats    int
 }
 
 //Initializing Config
-func ServiceInit(port string, env string, maxChatSize int, maxChats int) ServiceCfg {
+func ServiceInit(address string, portGrpc string, portHttp string, env string, maxChatSize int, maxChats int) ServiceCfg {
 	return ServiceCfg{
-		Port:        port,
+		Address:     address,
+		PortGrpc:    portGrpc,
+		PortHttp:    portHttp,
 		Env:         env,
 		MaxChatSize: maxChatSize,
 		MaxChats:    maxChats,

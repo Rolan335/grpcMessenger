@@ -4,7 +4,7 @@ package storage
 import (
 	"sync"
 
-	"github.com/Rolan335/grpcMessenger/proto"
+	"github.com/Rolan335/grpcMessenger/server/proto"
 	"github.com/Rolan335/grpcMessenger/server/internal/serviceErrors"
 	lru "github.com/hashicorp/golang-lru"
 )
