@@ -14,8 +14,6 @@ import (
 	"github.com/Rolan335/grpcMessenger/server/internal/util/checkuuid"
 
 	"github.com/google/uuid"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // Variable for storage struct that we are using
@@ -49,9 +47,8 @@ func (s Server) InitSession(ctx context.Context, r *proto.InitSessionRequest) (*
 func (s Server) CreateChat(ctx context.Context, r *proto.CreateChatRequest) (*proto.CreateChatResponse, error) {
 	//If invalid sessionUuid provided - request cannot be completed, return invalidUuid error.
 	if !checkuuid.IsParsed(r.GetSessionUuid()) {
-		errCreated := status.Error(codes.InvalidArgument, serviceErrors.ErrInvalidUuid.Error())
-		logger.LogRequestWithError(ctx, "CreateChat", r.String(), errCreated)
-		return nil, errCreated
+		logger.LogRequestWithError(ctx, "CreateChat", r.String(), serviceErrors.ErrInvalidUuid)
+		return nil, serviceErrors.ErrInvalidUuid
 	}
 
 	//Creating uuid for chat
@@ -62,9 +59,8 @@ func (s Server) CreateChat(ctx context.Context, r *proto.CreateChatRequest) (*pr
 
 	//If nonExistent session-uuid provided - logging and returning error
 	if errors.Is(err, serviceErrors.ErrUserDoesNotExist) {
-		errCreated := status.Error(codes.NotFound, err.Error())
-		logger.LogRequestWithError(ctx, "CreateChat", r.String(), errCreated)
-		return nil, errCreated
+		logger.LogRequestWithError(ctx, "CreateChat", r.String(), serviceErrors.ErrUserDoesNotExist)
+		return nil, serviceErrors.ErrUserDoesNotExist
 	}
 
 	//If ttl is set, chat will be deleted after time elapsed
@@ -82,9 +78,8 @@ func (s Server) CreateChat(ctx context.Context, r *proto.CreateChatRequest) (*pr
 func (s Server) SendMessage(ctx context.Context, r *proto.SendMessageRequest) (*proto.SendMessageResponse, error) {
 	//If invalid sessionUuid or chatUuid provided  - request cannot be completed, return invalidargs error.
 	if !checkuuid.IsParsed(r.GetSessionUuid(), r.GetChatUuid()) {
-		errCreated := status.Error(codes.InvalidArgument, serviceErrors.ErrInvalidUuid.Error())
-		logger.LogRequestWithError(ctx, "SendMessage", r.String(), errCreated)
-		return nil, errCreated
+		logger.LogRequestWithError(ctx, "SendMessage", r.String(), serviceErrors.ErrInvalidUuid)
+		return nil, serviceErrors.ErrInvalidUuid
 	}
 
 	//Creating uuid for message
@@ -93,16 +88,14 @@ func (s Server) SendMessage(ctx context.Context, r *proto.SendMessageRequest) (*
 	err := Storage.AddMessage(r.SessionUuid, r.ChatUuid, id.String(), r.Message)
 	//Check if chat not found - send error and log it
 	if errors.Is(err, serviceErrors.ErrChatNotFound) {
-		errCreated := status.Error(codes.NotFound, err.Error())
-		logger.LogRequestWithError(ctx, "SendMessage", r.String(), errCreated)
-		return nil, errCreated
+		logger.LogRequestWithError(ctx, "SendMessage", r.String(), serviceErrors.ErrChatNotFound)
+		return nil, serviceErrors.ErrChatNotFound
 	}
 
 	//Check if chat is readonly
 	if errors.Is(err, serviceErrors.ErrProhibited) {
-		errCreated := status.Error(codes.PermissionDenied, err.Error())
-		logger.LogRequestWithError(ctx, "SendMessage", r.String(), errCreated)
-		return nil, errCreated
+		logger.LogRequestWithError(ctx, "SendMessage", r.String(), serviceErrors.ErrProhibited)
+		return nil, serviceErrors.ErrProhibited
 	}
 
 	//Creating, logging and sending response
@@ -115,9 +108,8 @@ func (s Server) SendMessage(ctx context.Context, r *proto.SendMessageRequest) (*
 func (s Server) GetHistory(ctx context.Context, r *proto.GetHistoryRequest) (*proto.GetHistoryResponse, error) {
 	// if invalid chatUuid provided - request cannot be completed, return error
 	if !checkuuid.IsParsed(r.GetChatUuid()) {
-		errCreated := status.Error(codes.InvalidArgument, serviceErrors.ErrInvalidUuid.Error())
-		logger.LogRequestWithError(ctx, "GetHistory", r.String(), errCreated)
-		return nil, errCreated
+		logger.LogRequestWithError(ctx, "GetHistory", r.String(), serviceErrors.ErrInvalidUuid)
+		return nil, serviceErrors.ErrInvalidUuid
 	}
 
 	//get history from storage with chatUuid provided
@@ -125,9 +117,8 @@ func (s Server) GetHistory(ctx context.Context, r *proto.GetHistoryRequest) (*pr
 
 	//If chat not found - logging and returning error
 	if errors.Is(err, serviceErrors.ErrChatNotFound) {
-		errCreated := status.Error(codes.NotFound, err.Error())
-		logger.LogRequestWithError(ctx, "GetHistory", r.String(), errCreated)
-		return nil, errCreated
+		logger.LogRequestWithError(ctx, "GetHistory", r.String(), serviceErrors.ErrChatNotFound)
+		return nil, serviceErrors.ErrChatNotFound
 	}
 
 	//Create response, log and send
@@ -136,6 +127,7 @@ func (s Server) GetHistory(ctx context.Context, r *proto.GetHistoryRequest) (*pr
 	return response, nil
 }
 
+// implementation of GetActiveChats rpc
 func (s Server) GetActiveChats(ctx context.Context, r *proto.GetActiveChatsRequest) (*proto.GetActiveChatsResponse, error) {
 	chats := Storage.GetActiveChats()
 	response := &proto.GetActiveChatsResponse{Chats: chats}

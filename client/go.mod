@@ -3,7 +3,7 @@ module github.com/Rolan335/grpcMessenger/client
 go 1.23.3
 
 require (
-	github.com/Rolan335/grpcMessenger/proto v0.0.0-20241226161157-a861f11a50b0
+	github.com/Rolan335/grpcMessenger/proto v0.0.0-20241226175524-6b1c23e11b84
 	google.golang.org/grpc v1.69.2
 )
 

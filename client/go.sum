@@ -2,6 +2,8 @@ github.com/Rolan335/grpcMessenger/proto v0.0.0-20241224202951-7bcee7733016 h1:SA
 github.com/Rolan335/grpcMessenger/proto v0.0.0-20241224202951-7bcee7733016/go.mod h1:1J4sTJNnCNqSrp7k7P0/PJIpQ42tD4z5F4HmvINLwTI=
 github.com/Rolan335/grpcMessenger/proto v0.0.0-20241226161157-a861f11a50b0 h1:M83rwWj1llarjZ0SqK3LvCG/Nkg6cNakaW3xeWXDZA0=
 github.com/Rolan335/grpcMessenger/proto v0.0.0-20241226161157-a861f11a50b0/go.mod h1:1J4sTJNnCNqSrp7k7P0/PJIpQ42tD4z5F4HmvINLwTI=
+github.com/Rolan335/grpcMessenger/proto v0.0.0-20241226175524-6b1c23e11b84 h1:BezOYRoOylVeuZxaTI5QTaxbmxY0IYEV/wrXUeT1tHw=
+github.com/Rolan335/grpcMessenger/proto v0.0.0-20241226175524-6b1c23e11b84/go.mod h1:1J4sTJNnCNqSrp7k7P0/PJIpQ42tD4z5F4HmvINLwTI=
 github.com/go-logr/logr v1.4.2 h1:6pFjapn8bFcIbiKo3XT4j/BhANplGihG6tvd+8rYgrY=
 github.com/go-logr/logr v1.4.2/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
 github.com/go-logr/stdr v1.2.2 h1:hSWxHoqTgW2S2qGc0LTAI563KZ5YKYRhT3MFKZMbjag=

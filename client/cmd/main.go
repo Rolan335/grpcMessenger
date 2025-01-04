@@ -18,11 +18,10 @@ func main() {
 	address := flag.String("addr", "localhost:50051", "enter address of the service [127.0.0.1:50051]")
 	flag.Parse()
 	conn, err := grpc.NewClient(*address, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	defer conn.Close()
 	if err != nil {
-		fmt.Println(err)
+		panic("cannot start client " + err.Error())
 	}
-
+	defer conn.Close()
 	ctx := context.TODO()
 	c := proto.NewMessengerServiceClient(conn)
 	resp, err := requests.InitSession(ctx, c, &proto.InitSessionRequest{})
@@ -33,7 +32,11 @@ func main() {
 	fmt.Println("Your session: ", UUID)
 	for {
 		var action string
-		fmt.Scan(&action)
+		_, err := fmt.Scan(&action)
+		if err != nil {
+			fmt.Println(err)
+            continue
+		}
 		switch strings.ToLower(action) {
 		case "createchat":
 			var (
@@ -41,27 +44,37 @@ func main() {
 				readOnly bool
 			)
 			fmt.Println("Enter [ttl] [readonly]")
-			fmt.Scan(&ttl, &readOnly)
-			if ttl > 0 {
-
+			_, err := fmt.Scan(&ttl, &readOnly)
+			if err != nil {
+				fmt.Println(err)
+                continue
 			}
-			request := &proto.CreateChatRequest{Chat: &proto.Chat{SessionUuid: UUID, Ttl: int32(ttl), ReadOnly: readOnly}}
-			_, err := requests.CreateChat(ctx, c, request)
+			request := &proto.CreateChatRequest{SessionUuid: UUID, Ttl: int32(ttl), ReadOnly: readOnly}
+			resp, err := requests.CreateChat(ctx, c, request)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
+			fmt.Println(resp.GetChatUuid())
 		case "sendmessage":
 			var (
 				chatUuid string
 				message  string
 			)
 			fmt.Println("Enter chatUuid")
-			fmt.Scan(&chatUuid)
+			_, err := fmt.Scan(&chatUuid)
+			if err != nil {
+				fmt.Println(err)
+                continue
+			}
 			fmt.Println("Enter your message")
-			fmt.Scan(&message)
+			_, err = fmt.Scan(&message)
+			if err != nil {
+				fmt.Println(err)
+                continue
+			}
 			request := &proto.SendMessageRequest{SessionUuid: UUID, Message: message, ChatUuid: chatUuid}
-			_, err := requests.SendMessage(ctx, c, request)
+			_, err = requests.SendMessage(ctx, c, request)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -72,14 +85,18 @@ func main() {
 				chatUuid string
 			)
 			fmt.Println("Enter chatUuid")
-			fmt.Scan(&chatUuid)
+			_, err := fmt.Scan(&chatUuid)
+			if err != nil {
+				fmt.Println(err)
+                continue
+			}
 			request := &proto.GetHistoryRequest{ChatUuid: chatUuid}
 			resp, err := requests.GetHistory(ctx, c, request)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-			fmt.Println(resp.String())
+			fmt.Println(resp.GetMessages())
 		case "getactivechats":
 			request := &proto.GetActiveChatsRequest{}
 			resp, err := requests.GetActiveChats(ctx, c, request)
@@ -87,7 +104,10 @@ func main() {
 				fmt.Println(err)
 				continue
 			}
-			fmt.Println(resp.String())
+			chats := resp.GetChats()
+			for _, v := range chats {
+				fmt.Printf("chatUuid: %v, readonly: %v, creatorUuid: %v\n", v.ChatUuid, v.ReadOnly, v.SessionUuid)
+			}
 		default:
 			fmt.Println("Enter command")
 		}

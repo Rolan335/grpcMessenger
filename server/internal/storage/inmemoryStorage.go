@@ -165,11 +165,21 @@ func (s *InMemoryStorage) DeleteChat(sessionUuid string, chatUuid string) error 
 }
 
 func (s *InMemoryStorage) GetActiveChats() (chats []*proto.Chat) {
+	//Get keys for all chats in lru
 	chatKeys := s.ChatsData.Keys()
+
+	//Range over keys
 	for _, key := range chatKeys {
+
+		//Get data from lru with key
 		chat, _ := s.ChatsData.Get(key)
+
+		//type assert
 		chatAsserted := chat.(*Chat)
+
+		//Create proto.Chat instance and append it to returned slice
 		chats = append(chats, &proto.Chat{
+			ChatUuid:    chatAsserted.ChatUuid,
 			SessionUuid: chatAsserted.SessionUuid,
 			Ttl:         int32(chatAsserted.ttl),
 			ReadOnly:    chatAsserted.Readonly,
