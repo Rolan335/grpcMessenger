@@ -22,19 +22,18 @@ func LoggerInit(env string, out io.Writer) {
 	}
 }
 
-// Function logs successful request
-func LogRequest(ctx context.Context, route string, req string, res string) {
+// Function logs request
+func LogRequest(ctx context.Context, route string, req string, res string, err error) {
+	if err != nil {
+		Logger.LogAttrs(ctx, slog.LevelInfo, route,
+			slog.String("Request", req),
+			slog.String("Err", err.Error()),
+		)
+		return
+	}
 	Logger.LogAttrs(ctx, slog.LevelInfo, route,
 		slog.String("Request", req),
 		slog.String("Response", res),
-	)
-}
-
-// Function logs request with error
-func LogRequestWithError(ctx context.Context, route string, req string, err error) {
-	Logger.LogAttrs(ctx, slog.LevelInfo, route,
-		slog.String("Request", req),
-		slog.String("Error", err.Error()),
 	)
 }
 

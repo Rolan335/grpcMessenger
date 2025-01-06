@@ -2,31 +2,49 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
-	"github.com/Rolan335/grpcMessenger/proto"
 	"github.com/Rolan335/grpcMessenger/server/internal/app/serverinit"
 	"github.com/Rolan335/grpcMessenger/server/internal/config"
+	"github.com/Rolan335/grpcMessenger/server/internal/logger"
 	"github.com/Rolan335/grpcMessenger/server/internal/serviceErrors"
+	"github.com/Rolan335/grpcMessenger/server/proto"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type noOpWriter struct{}
+
+func (n *noOpWriter) Write(p []byte) (int, error) {
+	return 0, nil
+}
+
 func clientInit() (proto.MessengerServiceClient, *grpc.ClientConn) {
 	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 	c := proto.NewMessengerServiceClient(conn)
 	return c, conn
 }
 
 func startClientAndServer(maxChatSize int, maxChats int) (proto.MessengerServiceClient, *grpc.ClientConn) {
-	go serverinit.Start(config.ServiceCfg{PortGrpc: ":50051", Env: "dev", MaxChatSize: maxChatSize, MaxChats: maxChats})
+	cfg := config.ServiceCfg{
+		Address:     "localhost",
+		PortHttp:    ":8080",
+		PortGrpc:    ":50051",
+		Env:         "dev",
+		MaxChatSize: maxChatSize,
+		MaxChats:    maxChats,
+	}
+
+	//Logs are written to file, initializing logger
+	logger.LoggerInit(cfg.Env, &noOpWriter{})
+
+	go serverinit.Start(cfg)
 	return clientInit()
 }
 
@@ -130,11 +148,10 @@ func TestServer(t *testing.T) {
 			ReadOnly:    false,
 			Ttl:         2,
 		})
-		a.NoError(err,"c.CreateChat shouldn't return an error")
+		a.NoError(err, "c.CreateChat shouldn't return an error")
 		time.Sleep(time.Second * 3)
 		resp, _ := c.GetActiveChats(ctx, &proto.GetActiveChatsRequest{})
 		a.Equal(len(resp.Chats), 1, "chat should be deleted after 2 seconds") // 1 len because we created chat previously
-		fmt.Println(resp.Chats)
 	})
 
 	t.Run("Test readonly", func(t *testing.T) {

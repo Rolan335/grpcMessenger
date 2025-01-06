@@ -10,8 +10,10 @@ import (
 
 	"github.com/Rolan335/grpcMessenger/server/internal/config"
 	"github.com/Rolan335/grpcMessenger/server/internal/controller"
+	"github.com/Rolan335/grpcMessenger/server/internal/controller/interceptors"
 	"github.com/Rolan335/grpcMessenger/server/internal/logger"
 	"github.com/Rolan335/grpcMessenger/server/proto"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"google.golang.org/grpc"
 )
@@ -22,11 +24,20 @@ func Start(serverConfig config.ServiceCfg) {
 	if err != nil {
 		fmt.Println(err)
 	}
+	
+	//ctrl+c signal chan for graceful stop
 	stopSig := make(chan os.Signal, 1)
 	signal.Notify(stopSig, syscall.SIGINT, syscall.SIGTERM)
 
+	//Registering metrics
+	prometheus.MustRegister(interceptors.RequestsCounter)
+	logger.Logger.Info("start prometheus metric at :8080/metrics")
+
+	//making interceptors chain
+	chainUnaryInterceptor := grpc.ChainUnaryInterceptor(interceptors.Log, interceptors.Metric)
+
 	//Starting grpc server and our service
-	s := grpc.NewServer()
+	s := grpc.NewServer(chainUnaryInterceptor)
 	proto.RegisterMessengerServiceServer(s, controller.NewServer(serverConfig))
 
 	//started server concurrently to make graceful stop

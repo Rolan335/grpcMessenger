@@ -4,8 +4,8 @@ package storage
 import (
 	"sync"
 
-	"github.com/Rolan335/grpcMessenger/server/proto"
 	"github.com/Rolan335/grpcMessenger/server/internal/serviceErrors"
+	"github.com/Rolan335/grpcMessenger/server/proto"
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -52,19 +52,19 @@ func NewInMemoryStorage(maxChatSize int, maxChats int) *InMemoryStorage {
 func (s *InMemoryStorage) AddSession(sessionUuid string) {
 	//Add session to storage with mutex
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.Users[sessionUuid] = struct{}{}
-	s.mu.Unlock()
 }
 
 func (s *InMemoryStorage) AddChat(sessionUuid string, ttl int, readOnly bool, chatUuid string) error {
 	//Lock for reading to retrieve a data
 	s.mu.RLock()
+	defer s.mu.RUnlock()
 	_, ok := s.Users[sessionUuid]
 	//if not found send error
 	if !ok {
 		return serviceErrors.ErrUserDoesNotExist
 	}
-	s.mu.RUnlock()
 
 	//Creating new lru for chat to store messages.
 	lru, _ := lru.New(s.MaxChatSize)
