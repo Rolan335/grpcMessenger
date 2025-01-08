@@ -1,4 +1,4 @@
-//go:generate protoc --grpc-gateway_out=../proto --proto_path=../proto --go_out=../proto --go-grpc_out=../proto --go_opt=paths=source_relative ../proto/messenger.proto
+//go:generate protoc --grpc-gateway_out=../../proto --proto_path=../../proto --go_out=../../proto --go-grpc_out=../../proto --go_opt=paths=source_relative ../../proto/messenger.proto
 package main
 
 import (

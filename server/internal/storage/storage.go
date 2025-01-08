@@ -1,6 +1,6 @@
 package storage
 
-import "github.com/Rolan335/grpcMessenger/server/proto"
+import "github.com/Rolan335/grpcMessenger/proto"
 
 
 //Storage interface with methods that we need to implement so our storage will be able to work in service

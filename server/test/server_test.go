@@ -9,7 +9,7 @@ import (
 	"github.com/Rolan335/grpcMessenger/server/internal/config"
 	"github.com/Rolan335/grpcMessenger/server/internal/logger"
 	"github.com/Rolan335/grpcMessenger/server/internal/serviceErrors"
-	"github.com/Rolan335/grpcMessenger/server/proto"
+	"github.com/Rolan335/grpcMessenger/proto"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"

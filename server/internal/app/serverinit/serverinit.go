@@ -12,7 +12,7 @@ import (
 	"github.com/Rolan335/grpcMessenger/server/internal/controller"
 	"github.com/Rolan335/grpcMessenger/server/internal/controller/interceptors"
 	"github.com/Rolan335/grpcMessenger/server/internal/logger"
-	"github.com/Rolan335/grpcMessenger/server/proto"
+	"github.com/Rolan335/grpcMessenger/proto"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"google.golang.org/grpc"

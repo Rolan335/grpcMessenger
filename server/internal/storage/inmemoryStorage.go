@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/Rolan335/grpcMessenger/server/internal/serviceErrors"
-	"github.com/Rolan335/grpcMessenger/server/proto"
+	"github.com/Rolan335/grpcMessenger/proto"
 	lru "github.com/hashicorp/golang-lru"
 )
 

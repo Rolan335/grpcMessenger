@@ -6,7 +6,7 @@ import (
 
 	"github.com/Rolan335/grpcMessenger/server/internal/config"
 	"github.com/Rolan335/grpcMessenger/server/internal/logger"
-	"github.com/Rolan335/grpcMessenger/server/proto"
+	"github.com/Rolan335/grpcMessenger/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"

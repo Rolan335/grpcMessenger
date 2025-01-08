@@ -10,7 +10,7 @@ import (
 	"github.com/Rolan335/grpcMessenger/server/internal/serviceErrors"
 	"github.com/Rolan335/grpcMessenger/server/internal/storage"
 	"github.com/Rolan335/grpcMessenger/server/internal/util/checkuuid"
-	"github.com/Rolan335/grpcMessenger/server/proto"
+	"github.com/Rolan335/grpcMessenger/proto"
 
 	"github.com/google/uuid"
 )
