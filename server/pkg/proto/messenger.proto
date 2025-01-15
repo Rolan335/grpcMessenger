@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package messenger;
+
+option go_package = "/;proto";
+
+import "google/api/annotations.proto";
+
+message InitSessionRequest {
+}
+
+message InitSessionResponse {
+    string session_uuid = 1;
+}
+
+message CreateChatRequest {
+    string session_uuid = 1;
+    int32 ttl = 2;
+    bool read_only = 3;
+}
+
+message CreateChatResponse {
+    string chat_uuid = 1;
+}
+
+message SendMessageRequest {
+    string chat_uuid = 1;
+    string session_uuid = 2;
+    string message = 3;
+}
+
+message SendMessageResponse {
+}
+
+message GetHistoryRequest {
+    string chat_uuid = 1;
+}
+
+message ChatMessage{
+    string session_uuid = 1;
+    string message_uuid = 2;
+    string text = 3;
+}
+
+message GetHistoryResponse {
+    repeated ChatMessage messages = 1;
+}
+
+message GetActiveChatsRequest{
+}
+
+message Chat{
+    string chat_uuid = 1;
+    string session_uuid = 2;
+    int32 ttl = 3;
+    bool read_only = 4;
+}
+
+message GetActiveChatsResponse{
+    repeated Chat chats = 1;
+}
+
+service MessengerService {
+    rpc InitSession(InitSessionRequest) returns (InitSessionResponse){
+        option (google.api.http) = {
+            post: "/v1/initsession"
+            body: "*"
+        };
+    };
+    rpc CreateChat(CreateChatRequest) returns (CreateChatResponse){
+        option (google.api.http) = {
+            post: "/v1/createchat"
+            body: "*"
+        };
+    };
+    rpc SendMessage(SendMessageRequest) returns (SendMessageResponse){
+        option (google.api.http) = {
+            post: "/v1/sendmessage"
+            body: "*"
+        };
+    };
+    rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse){
+        option (google.api.http) = {
+            get: "/v1/chats/{chat_uuid}/history"
+        };
+    };
+    rpc GetActiveChats(GetActiveChatsRequest) returns (GetActiveChatsResponse){
+        option (google.api.http) = {
+            get: "/v1/chats"
+        };
+    };
+}

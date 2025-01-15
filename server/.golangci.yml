@@ -1,0 +1,17 @@
+linters:
+  enable:
+    - govet
+    - revive
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+    - copyloopvar
+    - gosimple
+    - errname
+    - gci
+    - gocheckcompilerdirectives 
+    - wrapcheck
+    - promlinter
+    - prealloc
+    - mnd

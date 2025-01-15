@@ -1,31 +1,57 @@
-//go:generate protoc --grpc-gateway_out=../../proto --proto_path=../../proto --go_out=../../proto --go-grpc_out=../../proto --go_opt=paths=source_relative ../../proto/messenger.proto
+//go:generate protoc --grpc-gateway_out=../pkg/proto --proto_path=../pkg/proto --go_out=../pkg/proto --go-grpc_out=../pkg/proto --go_opt=paths=source_relative ../pkg/proto/messenger.proto
 package main
 
 import (
-	"flag"
+	"context"
 	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
 
-	"github.com/Rolan335/grpcMessenger/server/internal/app/serverinit"
+	"github.com/Rolan335/grpcMessenger/server/internal/app"
 	"github.com/Rolan335/grpcMessenger/server/internal/config"
 	"github.com/Rolan335/grpcMessenger/server/internal/logger"
+	"github.com/Rolan335/grpcMessenger/server/internal/metric"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	//Parsing flags to config
-	port := flag.String("port", ":50051", "port of the app")
-	maxChatSize := flag.Int("maxchatsize", 100, "maximum of messages that chat will store")
-	maxChats := flag.Int("maxchats", 10, "maximum of chats that app will store")
-	env := flag.String("env", "dev", "environment")
-	flag.Parse()
-	serverConfig := config.ServiceInit("localhost", *port, ":8080", *env, *maxChatSize, *maxChats)
-
-	//Logs are written to file, initializing logger
-	f, err := os.OpenFile("logs.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+	//load .env
+	err := godotenv.Load(".env.local")
 	if err != nil {
-		panic("cannot start logging " + err.Error())
+		panic("cannot load .env file: " + err.Error())
 	}
-	defer f.Close()
-	logger.LoggerInit(serverConfig.Env, f)
 
-	serverinit.Start(serverConfig)
+	maxChatSize, err := strconv.Atoi(os.Getenv("APP_MAXCHATSIZE"))
+	if err != nil {
+		panic("failed to parse maxChatSize .env:" + err.Error())
+	}
+	maxChats, err := strconv.Atoi(os.Getenv("APP_MAXCHATS"))
+	if err != nil {
+		panic("failed to parse maxChats .env:" + err.Error())
+	}
+	serverConfig := config.MustConfigInit(
+		os.Getenv("APP_ADDRESS"),
+		os.Getenv("APP_PORTGRPC"),
+		os.Getenv("APP_PORTHTTP"),
+		os.Getenv("APP_ENV"),
+		maxChatSize,
+		maxChats,
+		os.Getenv("APP_DB"),
+	)
+
+	//initializing logger
+	logger := logger.Init(serverConfig.Env, os.Stdout)
+
+	//registering metrics
+	metric.MustInit()
+
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+	app := app.NewServiceServer(serverConfig, logger)
+	go app.MustStartGrpc()
+	go app.MustStartHttp(ctx)
+	<-ctx.Done()
+	app.GracefulStop()
 }

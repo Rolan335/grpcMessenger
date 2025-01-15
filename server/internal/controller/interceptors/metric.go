@@ -3,23 +3,19 @@ package interceptors
 
 import (
 	"context"
+	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/Rolan335/grpcMessenger/server/internal/metric"
+	"github.com/Rolan335/grpcMessenger/server/pkg/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-// counter of all successful and failed requests
-var RequestsCounter = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: "requests_total",
-		Help: "total number of requests to service",
-	},
-	[]string{"method", "status"},
-)
-
 func Metric(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	//start timer
+	start := time.Now()
+
 	//making request
 	resp, err := handler(ctx, req)
 
@@ -31,7 +27,25 @@ func Metric(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, ha
 		statusCode = status.Code(err)
 	}
 
+	if _, ok := req.(*proto.InitSessionRequest); ok && statusCode == codes.OK {
+		metric.UsersRegisteredTotal.Inc()
+	}
+	if reqAsserted, ok := req.(*proto.CreateChatRequest); ok && statusCode == codes.OK {
+		if reqAsserted.Ttl < 0 {
+			reqAsserted.Ttl = 0
+		}
+		metric.ChatsCreatedTtl.Observe(float64(reqAsserted.Ttl))
+	}
+
+	if reqAsserted, ok := req.(*proto.SendMessageRequest); ok && statusCode == codes.OK {
+		metric.MessagesPerChat.WithLabelValues(reqAsserted.ChatUuid).Inc()
+	}
+
 	//incrementing request counter according to label values
-	RequestsCounter.WithLabelValues(info.FullMethod, statusCode.String()).Inc()
+	metric.RequestsCounter.WithLabelValues(info.FullMethod, statusCode.String()).Inc()
+
+	if statusCode == codes.OK {
+		metric.ResponseDuration.WithLabelValues(statusCode.String()).Observe(time.Since(start).Seconds())
+	}
 	return resp, err
 }

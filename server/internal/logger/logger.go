@@ -6,42 +6,43 @@ import (
 	"log/slog"
 )
 
-var Logger *slog.Logger
+type Logger struct {
+	*slog.Logger
+}
 
-// initializing logger depending on env that currently is on
-func LoggerInit(env string, out io.Writer) {
+func Init(env string, out io.Writer) Logger {
 	switch env {
 	case "local":
-		Logger = slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{Level: slog.LevelDebug}))
+		return Logger{slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{Level: slog.LevelDebug}))}
 	case "dev":
-		Logger = slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{Level: slog.LevelDebug}))
+		return Logger{slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{Level: slog.LevelDebug}))}
 	case "prod":
-		Logger = slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{Level: slog.LevelInfo}))
+		return Logger{slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{Level: slog.LevelInfo}))}
 	default:
-		Logger = slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{Level: slog.LevelInfo}))
+		return Logger{slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{Level: slog.LevelInfo}))}
 	}
 }
 
 // Function logs request
-func LogRequest(ctx context.Context, route string, req string, res string, err error) {
+func (l *Logger) LogRequest(ctx context.Context, route string, req string, res string, err error) {
 	if err != nil {
-		Logger.LogAttrs(ctx, slog.LevelInfo, route,
+		l.LogAttrs(ctx, slog.LevelInfo, route,
 			slog.String("Request", req),
 			slog.String("Err", err.Error()),
 		)
 		return
 	}
-	Logger.LogAttrs(ctx, slog.LevelInfo, route,
+	l.LogAttrs(ctx, slog.LevelInfo, route,
 		slog.String("Request", req),
 		slog.String("Response", res),
 	)
 }
 
 // Function logs deletion of chat
-func LogChatDelete(sessionUuid string, ChatUuid string, err error) {
+func (l *Logger) LogChatDelete(sessionUuid string, ChatUuid string, err error) {
 	// if error from chatDelete provided - logging error
 	if err != nil {
-		Logger.LogAttrs(context.Background(), slog.LevelError, "DeleteChat",
+		l.LogAttrs(context.Background(), slog.LevelError, "DeleteChat",
 			slog.String("sessionUuid", sessionUuid),
 			slog.String("chatUuid", ChatUuid),
 			slog.String("error", err.Error()),
@@ -49,7 +50,7 @@ func LogChatDelete(sessionUuid string, ChatUuid string, err error) {
 		return
 	}
 	//if no error, logging without error (to avoid nil pointer dereference panic)
-	Logger.LogAttrs(context.Background(), slog.LevelInfo, "DeleteChat",
+	l.LogAttrs(context.Background(), slog.LevelInfo, "DeleteChat",
 		slog.String("sessionUuid", sessionUuid),
 		slog.String("chatUuid", ChatUuid),
 	)
