@@ -9,9 +9,12 @@ linters:
     - copyloopvar
     - gosimple
     - errname
-    - gci
     - gocheckcompilerdirectives 
     - wrapcheck
     - promlinter
     - prealloc
-    - mnd
+
+issues:
+  exclude-dirs:
+    - test
+    - pkg/proto

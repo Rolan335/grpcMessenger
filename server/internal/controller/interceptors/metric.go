@@ -34,7 +34,7 @@ func Metric(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, ha
 		if reqAsserted.Ttl < 0 {
 			reqAsserted.Ttl = 0
 		}
-		metric.ChatsCreatedTtl.Observe(float64(reqAsserted.Ttl))
+		metric.ChatsCreatedTTL.Observe(float64(reqAsserted.Ttl))
 	}
 
 	if reqAsserted, ok := req.(*proto.SendMessageRequest); ok && statusCode == codes.OK {

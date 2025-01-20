@@ -39,19 +39,19 @@ func (l *Logger) LogRequest(ctx context.Context, route string, req string, res s
 }
 
 // Function logs deletion of chat
-func (l *Logger) LogChatDelete(sessionUuid string, ChatUuid string, err error) {
+func (l *Logger) LogChatDelete(sessionUUID string, ChatUUID string, err error) {
 	// if error from chatDelete provided - logging error
 	if err != nil {
 		l.LogAttrs(context.Background(), slog.LevelError, "DeleteChat",
-			slog.String("sessionUuid", sessionUuid),
-			slog.String("chatUuid", ChatUuid),
+			slog.String("sessionUuid", sessionUUID),
+			slog.String("chatUuid", ChatUUID),
 			slog.String("error", err.Error()),
 		)
 		return
 	}
 	//if no error, logging without error (to avoid nil pointer dereference panic)
 	l.LogAttrs(context.Background(), slog.LevelInfo, "DeleteChat",
-		slog.String("sessionUuid", sessionUuid),
-		slog.String("chatUuid", ChatUuid),
+		slog.String("sessionUuid", sessionUUID),
+		slog.String("chatUuid", ChatUUID),
 	)
 }

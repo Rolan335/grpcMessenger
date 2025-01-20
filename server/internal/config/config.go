@@ -8,8 +8,8 @@ import (
 // Config that provided from flags at start
 type ServiceCfg struct {
 	Address     string
-	PortGrpc    string
-	PortHttp    string
+	PortGRPC    string
+	PortHTTP    string
 	Env         string
 	MaxChatSize int
 	MaxChats    int
@@ -17,23 +17,23 @@ type ServiceCfg struct {
 }
 
 // Initializing Config and panic if couldn't
-func MustConfigInit(address string, portGrpc string, portHttp string, env string, maxChatSize int, maxChats int, storageType string) ServiceCfg {
+func MustConfigInit(address string, portGRPC string, portHTTP string, env string, maxChatSize int, maxChats int, storageType string) ServiceCfg {
 	maxChatsAvailable := 1000
 	maxChatSizeAvailable := 5000
 	maxPort := 65535
 
 	reg := regexp.MustCompile(`:\d{1,5}`)
-	if portGrpc == portHttp {
+	if portGRPC == portHTTP {
 		panic("equal port for grpc and http")
 	}
-	portHttpInt, _ := strconv.Atoi(portHttp[1:])
-	portGrpcInt, _ := strconv.Atoi(portGrpc[1:])
+	portHTTPInt, _ := strconv.Atoi(portHTTP[1:])
+	portGRPCInt, _ := strconv.Atoi(portGRPC[1:])
 
-	if !reg.MatchString(portGrpc) || portGrpcInt > maxPort {
+	if !reg.MatchString(portGRPC) || portGRPCInt > maxPort {
 		panic("grpc port invalid")
 	}
 
-	if !reg.MatchString(portHttp) || portHttpInt > maxPort {
+	if !reg.MatchString(portHTTP) || portHTTPInt > maxPort {
 		panic("http port invalid")
 	}
 
@@ -47,8 +47,8 @@ func MustConfigInit(address string, portGrpc string, portHttp string, env string
 
 	return ServiceCfg{
 		Address:     address,
-		PortGrpc:    portGrpc,
-		PortHttp:    portHttp,
+		PortGRPC:    portGRPC,
+		PortHTTP:    portHTTP,
 		Env:         env,
 		MaxChatSize: maxChatSize,
 		MaxChats:    maxChats,

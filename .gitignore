@@ -1,2 +1,6 @@
-#ignore logs
-logs.log
+#ignore executable builds directory
+build/*
+
+#ignore env file
+.env
+.env.local

@@ -8,11 +8,11 @@ import (
 )
 
 // ttl is in seconds. Starting goroutine that will invoke DeleteChat method when time elapsed.
-func DeleteAfter(ttl int, sessionUuid string, chatUuid string, storage repository.Storage, logger logger.Logger) {
+func DeleteAfter(ttl int, sessionUUID string, chatUUID string, storage repository.Storage, logger logger.Logger) {
 	go func() {
 		<-time.After(time.Duration(ttl) * time.Second)
-		err := storage.DeleteChat(sessionUuid, chatUuid)
+		err := storage.DeleteChat(sessionUUID, chatUUID)
 		//when chat deleted - log it.
-		logger.LogChatDelete(sessionUuid, chatUuid, err)
+		logger.LogChatDelete(sessionUUID, chatUUID, err)
 	}()
 }

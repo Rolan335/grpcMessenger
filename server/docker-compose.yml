@@ -12,7 +12,7 @@ services:
         - "50051:50051"
         - "8080:8080"
       env_file:
-        - .env.docker
+        - .env.example
   redis:
     image: redis:7.2.7-alpine
     container_name: messenger_redis  

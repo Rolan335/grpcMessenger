@@ -2,8 +2,11 @@ package messenger
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/google/uuid"
 
 	"github.com/Rolan335/grpcMessenger/server/internal/config"
 	"github.com/Rolan335/grpcMessenger/server/internal/logger"
@@ -11,8 +14,6 @@ import (
 	"github.com/Rolan335/grpcMessenger/server/internal/repository/inmemory"
 	"github.com/Rolan335/grpcMessenger/server/internal/repository/postgres"
 	"github.com/Rolan335/grpcMessenger/server/internal/repository/redis"
-
-	"github.com/google/uuid"
 )
 
 type Messenger struct {
@@ -32,7 +33,7 @@ func NewMessenger(config config.ServiceCfg, logger logger.Logger) *Messenger {
 		if err != nil {
 			panic("failed to parse .env POSTGRES_FLUSH: " + err.Error())
 		}
-		postgresConfig := postgres.PostgresConfig{
+		postgresConfig := postgres.Config{
 			Host:       os.Getenv("POSTGRES_HOST"),
 			User:       os.Getenv("POSTGRES_USER"),
 			Password:   os.Getenv("POSTGRES_PASSWORD"),
@@ -40,7 +41,7 @@ func NewMessenger(config config.ServiceCfg, logger logger.Logger) *Messenger {
 			Port:       port,
 			FreshStart: freshstart,
 		}
-		db = postgres.NewPostgresStorage(postgresConfig, config.MaxChats, config.MaxChatSize)
+		db = postgres.NewStorage(postgresConfig, config.MaxChats, config.MaxChatSize)
 	case "redis":
 		freshstart, err := strconv.ParseBool(os.Getenv("REDIS_FLUSH"))
 		if err != nil {
@@ -50,15 +51,15 @@ func NewMessenger(config config.ServiceCfg, logger logger.Logger) *Messenger {
 		if err != nil {
 			panic("failed to parse .env REDIS_DB: " + err.Error())
 		}
-		redisConfig := redis.RedisConfig{
+		redisConfig := redis.Config{
 			Addr:     os.Getenv("REDIS_ADDRESS"),
 			Password: os.Getenv("REDIS_PASSWORD"),
 			DB:       redisDb,
 			FlushAll: freshstart,
 		}
-		db = redis.NewRedisStorage(redisConfig, config.MaxChatSize, config.MaxChats)
+		db = redis.NewStorage(redisConfig, config.MaxChatSize, config.MaxChats)
 	default:
-		db = inmemory.NewInMemoryStorage(config.MaxChatSize, config.MaxChats)
+		db = inmemory.NewStorage(config.MaxChatSize, config.MaxChats)
 	}
 	return &Messenger{
 		storage: db,
@@ -75,45 +76,45 @@ func (m *Messenger) InitSession() string {
 	return id.String()
 }
 
-func (m *Messenger) CreateChat(sessionUuid string, ttl int, readOnly bool) (string, error) {
-	//If invalid sessionUuid provided - request cannot be completed, return invalidUuid error.
-	if _, err := uuid.Parse(sessionUuid); err != nil {
-		return "", ErrInvalidSessionUuid
+func (m *Messenger) CreateChat(sessionUUID string, ttl int, readOnly bool) (string, error) {
+	//If invalid sessionUUID provided - request cannot be completed, return invalidUUID error.
+	if _, err := uuid.Parse(sessionUUID); err != nil {
+		return "", ErrInvalidSessionUUID
 	}
 
 	//Creating uuid for chat
 	id, _ := uuid.NewRandom()
 
 	//Add new chat to server storage
-	err := m.storage.AddChat(sessionUuid, ttl, readOnly, id.String())
+	err := m.storage.AddChat(sessionUUID, ttl, readOnly, id.String())
 	if err != nil {
-		//If nonExistent session-uuid provided - returning error
+		//If nonExistent session-UUID provided - returning error
 		if errors.Is(err, repository.ErrNotFound) {
 			return "", ErrUserDoesNotExist
 		}
-		return "", err
+		return "", fmt.Errorf("messenger: %w",err)
 	}
 
 	//If ttl is set, chat will be deleted after time elapsed
 	if ttl > 0 {
-		DeleteAfter(ttl, sessionUuid, id.String(), m.storage, m.logger)
+		DeleteAfter(ttl, sessionUUID, id.String(), m.storage, m.logger)
 	}
 	return id.String(), nil
 }
 
-func (m *Messenger) SendMessage(sessionUuid string, chatUuid string, message string) error {
-	//If invalid sessionUuid or chatUuid provided  - request cannot be completed, return invalidargs error.
-	if _, err := uuid.Parse(sessionUuid); err != nil {
-		return ErrInvalidSessionUuid
+func (m *Messenger) SendMessage(sessionUUID string, chatUUID string, message string) error {
+	//If invalid sessionUUID or chatUUID provided  - request cannot be completed, return invalidargs error.
+	if _, err := uuid.Parse(sessionUUID); err != nil {
+		return ErrInvalidSessionUUID
 	}
-	if _, err := uuid.Parse(chatUuid); err != nil {
-		return ErrInvalidChatUuid
+	if _, err := uuid.Parse(chatUUID); err != nil {
+		return ErrInvalidChatUUID
 	}
 
 	//Creating uuid for message
 	id, _ := uuid.NewRandom()
 	//Adding new message to storage and if failed - returns error
-	err := m.storage.AddMessage(sessionUuid, chatUuid, id.String(), message)
+	err := m.storage.AddMessage(sessionUUID, chatUUID, id.String(), message)
 	if err != nil {
 		//Check if chat not found - send error
 		if errors.Is(err, repository.ErrNotFound) {
@@ -126,26 +127,26 @@ func (m *Messenger) SendMessage(sessionUuid string, chatUuid string, message str
 		if errors.Is(err, repository.ErrProhibited) {
 			return ErrProhibited
 		}
-		return err
+		return fmt.Errorf("messenger: %w",err)
 	}
 
 	return nil
 }
 
-func (m *Messenger) GetHistory(chatUuid string) ([]repository.Message, error) {
-	// if invalid chatUuid provided - request cannot be completed, return error
-	if _, err := uuid.Parse(chatUuid); err != nil {
-		return nil, ErrInvalidChatUuid
+func (m *Messenger) GetHistory(chatUUID string) ([]repository.Message, error) {
+	// if invalid chatUUID provided - request cannot be completed, return error
+	if _, err := uuid.Parse(chatUUID); err != nil {
+		return nil, ErrInvalidChatUUID
 	}
 
-	//get history from storage with chatUuid provided
-	history, err := m.storage.GetHistory(chatUuid)
+	//get history from storage with chatUUID provided
+	history, err := m.storage.GetHistory(chatUUID)
 	if err != nil {
 		//If chat not found - returning error
 		if errors.Is(err, repository.ErrNotFound) {
 			return nil, ErrChatNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("messenger: %w",err)
 	}
 	return history, nil
 }

@@ -25,7 +25,7 @@ var ResponseDuration = prometheus.NewHistogramVec(
 	[]string{"method"},
 )
 
-var ChatsCreatedTtl = prometheus.NewHistogram(
+var ChatsCreatedTTL = prometheus.NewHistogram(
 	prometheus.HistogramOpts{
 		Name:    "chats_ttl",
 		Help:    "ttl time of chats created in seconds (zero is no ttl)",
@@ -35,14 +35,14 @@ var ChatsCreatedTtl = prometheus.NewHistogram(
 
 var UsersRegisteredTotal = prometheus.NewCounter(
 	prometheus.CounterOpts{
-		Name: "user_registered",
+		Name: "user_registered_total",
 		Help: "total number of users registered",
 	},
 )
 
 var MessagesPerChat = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: "messages_per_chat",
+		Name: "messages_per_chat_total",
 		Help: "Total number of sent messages in chat",
 	},
 	[]string{"chat_uuid"},
@@ -55,7 +55,7 @@ func MustInit() {
 		prometheus.MustRegister(
 			RequestsCounter,
 			ResponseDuration,
-			ChatsCreatedTtl,
+			ChatsCreatedTTL,
 			UsersRegisteredTotal,
 			MessagesPerChat,
 		)

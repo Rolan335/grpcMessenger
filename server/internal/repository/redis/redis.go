@@ -12,36 +12,36 @@ import (
 )
 
 var (
-	keyUser            = "users"        // users - set session_uuid
-	keyActiveChats     = "active_chats" // active_chats - list chat_uuid
-	keyPrefixChat      = "chat:"        // chat:{chat_uuid} - list RedisChat{...}
-	keyPostfixMessages = ":messages"    // chat:{chat_uuid}:messages - list message{...}
+	keyUser            = "users"        // users - set session_UUID
+	keyActiveChats     = "active_chats" // active_chats - list chat_UUID
+	keyPrefixChat      = "chat:"        // chat:{chat_UUID} - list Chat{...}
+	keyPostfixMessages = ":messages"    // chat:{chat_UUID}:messages - list message{...}
 )
 
-type RedisMessage struct {
-	MessageUuid string `json:"message_uuid"`
-	SessionUuid string `json:"session_uuid"`
+type Message struct {
+	MessageUUID string `json:"message_UUID"`
+	SessionUUID string `json:"session_UUID"`
 	Text        string `json:"text"`
 }
 
-type RedisChat struct {
-	ChatUuid    string `json:"chat_uuid"`
-	SessionUuid string `json:"session_uuid"`
+type Chat struct {
+	ChatUUID    string `json:"chat_UUID"`
+	SessionUUID string `json:"session_UUID"`
 	ReadOnly    bool   `json:"read_only"`
-	Ttl         int    `json:"ttl"`
+	TTL         int    `json:"ttl"`
 }
 
-type RedisUser struct {
-	SessionUuid string `json:"session_uuid"`
+type User struct {
+	SessionUUID string `json:"session_UUID"`
 }
 
-type RedisStorage struct {
+type Storage struct {
 	MaxChatSize int
 	MaxChats    int
 	client      *redis.Client
 }
 
-type RedisConfig struct {
+type Config struct {
 	Addr     string
 	Password string
 	DB       int
@@ -50,7 +50,7 @@ type RedisConfig struct {
 
 var rdb *redis.Client
 
-func NewRedisStorage(cfg RedisConfig, maxChatSize int, maxChats int) *RedisStorage {
+func NewStorage(cfg Config, maxChatSize int, maxChats int) *Storage {
 	rdb = redis.NewClient(&redis.Options{
 		Addr:     cfg.Addr,
 		Password: cfg.Password,
@@ -60,25 +60,27 @@ func NewRedisStorage(cfg RedisConfig, maxChatSize int, maxChats int) *RedisStora
 	if err != nil {
 		panic("failed to connect to redis: " + err.Error())
 	}
-	rdb.FlushAll(context.Background())
-	return &RedisStorage{
+	if cfg.FlushAll {
+		rdb.FlushAll(context.Background())
+	}
+	return &Storage{
 		MaxChatSize: maxChatSize,
 		MaxChats:    maxChats,
 		client:      rdb,
 	}
 }
 
-func (r *RedisStorage) AddSession(sessionUuid string) {
-	r.client.SAdd(context.Background(), keyUser, sessionUuid)
+func (r *Storage) AddSession(sessionUUID string) {
+	r.client.SAdd(context.Background(), keyUser, sessionUUID)
 }
 
-func (r *RedisStorage) AddChat(sessionUuid string, ttl int, readOnly bool, chatUuid string) error {
+func (r *Storage) AddChat(sessionUUID string, ttl int, readOnly bool, chatUUID string) error {
 	ctx := context.Background()
-	isPresent := r.client.SIsMember(ctx, keyUser, sessionUuid).Val()
+	isPresent := r.client.SIsMember(ctx, keyUser, sessionUUID).Val()
 	if !isPresent {
 		return repository.ErrNotFound
 	}
-	r.client.RPush(ctx, keyActiveChats, chatUuid)
+	r.client.RPush(ctx, keyActiveChats, chatUUID)
 	//Удаление чата если больше maxChats (LRU)
 	excessChats := r.client.LRange(ctx, keyActiveChats, 0, -int64(r.MaxChats)-1).Val()
 	for range excessChats {
@@ -87,110 +89,115 @@ func (r *RedisStorage) AddChat(sessionUuid string, ttl int, readOnly bool, chatU
 		r.client.Del(ctx, fmt.Sprintf("%s%s%s", keyPrefixChat, chatDeleted, keyPostfixMessages))
 	}
 
-	chatJSON, _ := json.Marshal(RedisChat{
-		SessionUuid: sessionUuid,
-		ChatUuid:    chatUuid,
-		Ttl:         ttl,
+	chatJSON, _ := json.Marshal(Chat{
+		SessionUUID: sessionUUID,
+		ChatUUID:    chatUUID,
+		TTL:         ttl,
 		ReadOnly:    readOnly,
 	})
-	r.client.Set(ctx, fmt.Sprintf("%s%s", keyPrefixChat, chatUuid), chatJSON, 0)
+	r.client.Set(ctx, fmt.Sprintf("%s%s", keyPrefixChat, chatUUID), chatJSON, 0)
 	return nil
 }
-func (r *RedisStorage) DeleteChat(sessionUuid string, chatUuid string) error {
+func (r *Storage) DeleteChat(sessionUUID string, chatUUID string) error {
 	ctx := context.Background()
-	chat, err := getChatFromKey(r, ctx, chatUuid)
+	chat, err := getChatFromKey(ctx, r, chatUUID)
 	if errors.Is(err, redis.Nil) {
 		return repository.ErrNotFound
 	}
-	if chat.SessionUuid != sessionUuid {
+	if chat.SessionUUID != sessionUUID {
 		return repository.ErrProhibited
 	}
 
-	r.client.LRem(ctx, keyActiveChats, 0, chat.ChatUuid)
-	r.client.Del(ctx, fmt.Sprintf("%s%s", keyPrefixChat, chat.ChatUuid))
-	r.client.Del(ctx, fmt.Sprintf("%s%s%s", keyPrefixChat, chat.ChatUuid, keyPostfixMessages))
+	r.client.LRem(ctx, keyActiveChats, 0, chat.ChatUUID)
+	r.client.Del(ctx, fmt.Sprintf("%s%s", keyPrefixChat, chat.ChatUUID))
+	r.client.Del(ctx, fmt.Sprintf("%s%s%s", keyPrefixChat, chat.ChatUUID, keyPostfixMessages))
 
 	return nil
 }
 
-func (r *RedisStorage) AddMessage(sessionUuid string, chatUuid string, messageUuid string, message string) error {
+func (r *Storage) AddMessage(sessionUUID string, chatUUID string, messageUUID string, message string) error {
 	ctx := context.Background()
-	chat, err := getChatFromKey(r, ctx, chatUuid)
+	chat, err := getChatFromKey(ctx, r, chatUUID)
 	if errors.Is(err, redis.Nil) {
 		return repository.ErrNotFound
 	}
-	if !r.client.SIsMember(ctx, keyUser, sessionUuid).Val() {
+	if !r.client.SIsMember(ctx, keyUser, sessionUUID).Val() {
 		return repository.ErrUserDoesntExist
 	}
-	if chat.ReadOnly && chat.SessionUuid != sessionUuid {
+	if chat.ReadOnly && chat.SessionUUID != sessionUUID {
 		return repository.ErrProhibited
 	}
 
-	messageJSON, _ := json.Marshal(RedisMessage{
-		MessageUuid: messageUuid,
-		SessionUuid: sessionUuid,
+	messageJSON, _ := json.Marshal(Message{
+		MessageUUID: messageUUID,
+		SessionUUID: sessionUUID,
 		Text:        message,
 	})
 
-	r.client.RPush(ctx, fmt.Sprintf("%s%s%s", keyPrefixChat, chat.ChatUuid, keyPostfixMessages), messageJSON)
+	r.client.RPush(ctx, fmt.Sprintf("%s%s%s", keyPrefixChat, chat.ChatUUID, keyPostfixMessages), messageJSON)
 	//Удаление Сообщения если больше maxChatSize (LRU)
-	r.client.LTrim(ctx, fmt.Sprintf("%s%s%s", keyPrefixChat, chat.ChatUuid, keyPostfixMessages), -int64(r.MaxChatSize), -1)
+	r.client.LTrim(ctx, fmt.Sprintf("%s%s%s", keyPrefixChat, chat.ChatUUID, keyPostfixMessages), -int64(r.MaxChatSize), -1)
 
 	return nil
 }
 
-func getChatFromKey(r *RedisStorage, ctx context.Context, chatUuid string) (RedisChat, error) {
-	chat, err := r.client.Get(ctx, fmt.Sprintf("%s%s", keyPrefixChat, chatUuid)).Result()
+func getChatFromKey(ctx context.Context, r *Storage, chatUUID string) (Chat, error) {
+	chat, err := r.client.Get(ctx, fmt.Sprintf("%s%s", keyPrefixChat, chatUUID)).Result()
 	if err != nil {
-		return RedisChat{}, err
+		return Chat{}, fmt.Errorf("redis: %w", err)
 	}
-	var chatUnmarshalled RedisChat
+	var chatUnmarshalled Chat
 	err = json.Unmarshal([]byte(chat), &chatUnmarshalled)
-	if err != nil{
-		return RedisChat{}, err
+	if err != nil {
+		return Chat{}, fmt.Errorf("redis: %w", err)
 	}
 	return chatUnmarshalled, nil
 }
 
-func (r *RedisStorage) GetHistory(chatUuid string) (history []repository.Message, err error) {
+func (r *Storage) GetHistory(chatUUID string) (history []repository.Message, err error) {
 	ctx := context.Background()
-	messages, err := r.client.LRange(ctx, fmt.Sprintf("%s%s%s", keyPrefixChat, chatUuid, keyPostfixMessages), 0, -1).Result()
+	messages, err := r.client.LRange(ctx, fmt.Sprintf("%s%s%s", keyPrefixChat, chatUUID, keyPostfixMessages), 0, -1).Result()
 	if errors.Is(err, redis.Nil) {
 		return nil, repository.ErrNotFound
 	}
 	for _, v := range messages {
-		var message RedisMessage
+		var message Message
 		err := json.Unmarshal([]byte(v), &message)
-		if err != nil{
-			return nil, err
+		if err != nil {
+			return nil, fmt.Errorf("redis: %w", err)
 		}
 		history = append(history, repository.Message{
-			SessionUuid: message.SessionUuid,
-			MessageUuid: message.MessageUuid,
+			SessionUUID: message.SessionUUID,
+			MessageUUID: message.MessageUUID,
 			Text:        message.Text,
 		})
 	}
 	return
 }
-func (r *RedisStorage) GetActiveChats() (chats []repository.Chat) {
+func (r *Storage) GetActiveChats() (chats []repository.Chat) {
 	ctx := context.Background()
-	chats_uuid := r.client.LRange(ctx, keyActiveChats, 0, -1).Val()
-	for _, v := range chats_uuid {
-		chat, _ := getChatFromKey(r, ctx, v)
+	chatsUUID := r.client.LRange(ctx, keyActiveChats, 0, -1).Val()
+	for _, v := range chatsUUID {
+		chat, _ := getChatFromKey(ctx, r, v)
 		chats = append(chats, repository.Chat{
-			SessionUuid: chat.SessionUuid,
-			ChatUuid:    chat.ChatUuid,
+			SessionUUID: chat.SessionUUID,
+			ChatUUID:    chat.ChatUUID,
 			ReadOnly:    chat.ReadOnly,
-			Ttl:         chat.Ttl,
+			TTL:         chat.TTL,
 		})
 	}
 	return
 }
 
-func GracefulStop(){
-	if rdb == nil{
+func GracefulStop() {
+	if rdb == nil {
 		return
 	}
 	rdb.Close()
 	fmt.Println("redis closed successfully")
+}
+
+// nolint
+func Ping() error {
+	return rdb.Ping(context.Background()).Err()
 }

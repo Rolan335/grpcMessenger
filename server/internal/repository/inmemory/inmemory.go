@@ -1,5 +1,6 @@
-// Implementation of storage interface for concurrent-safe inmemory storage
 package inmemory
+
+// Implementation of storage interface for concurrent-safe inmemory storage
 
 import (
 	"sync"
@@ -10,60 +11,60 @@ import (
 )
 
 // К каждому сообщению привязан id юзера, id сообщения и само сообщение
-type InmemoryMessage struct {
-	SessionUuid string
-	MessageUuid string
+type Message struct {
+	SessionUUID string
+	MessageUUID string
 	Text        string
 }
 
 // Чат хранит в себе id юзера создавшего чат, могут ли другие юзеры писать в чат, время (в секундах) через сколько чат удалится,
-type InmemoryChat struct {
-	SessionUuid string
+type Chat struct {
+	SessionUUID string
 	ReadOnly    bool
-	Ttl         int
-	ChatUuid    string
+	TTL         int
+	ChatUUID    string
 	Messages    *lru.Cache
 }
 
-type InmemoryUser struct {
-	SessionUuid string
+type User struct {
+	SessionUUID string
 }
 
 // mutex для конкурентой работы с мапой юзеров. MaxChatSize и MaxChats хранят максимальный размер чата и максимальное кол-во чатов соответственно.
 // Все чаты хранятся в lru. Все юзеры в мапе для оптимизации поиска.
-type InMemoryStorage struct {
+type Storage struct {
 	MaxChatSize int
 	MaxChats    int
 	mu          *sync.RWMutex
 	ChatsData   *lru.Cache
-	Users       map[InmemoryUser]struct{}
+	Users       map[User]struct{}
 }
 
-func NewInMemoryStorage(maxChatSize int, maxChats int) *InMemoryStorage {
+func NewStorage(maxChatSize int, maxChats int) *Storage {
 	//Creating lru for chats storage
 	lru, _ := lru.New(maxChats)
 	//Initializing new inmemory storage
-	return &InMemoryStorage{
+	return &Storage{
 		MaxChatSize: maxChatSize,
 		MaxChats:    maxChats,
 		mu:          &sync.RWMutex{},
 		ChatsData:   lru,
-		Users:       make(map[InmemoryUser]struct{}),
+		Users:       make(map[User]struct{}),
 	}
 }
 
-func (s *InMemoryStorage) AddSession(sessionUuid string) {
+func (s *Storage) AddSession(sessionUUID string) {
 	//Add session to storage with mutex
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.Users[InmemoryUser{SessionUuid: sessionUuid}] = struct{}{}
+	s.Users[User{SessionUUID: sessionUUID}] = struct{}{}
 }
 
-func (s *InMemoryStorage) AddChat(sessionUuid string, ttl int, readOnly bool, chatUuid string) error {
+func (s *Storage) AddChat(sessionUUID string, ttl int, readOnly bool, chatUUID string) error {
 	//Lock for reading to retrieve a data
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	_, ok := s.Users[InmemoryUser{SessionUuid: sessionUuid}]
+	_, ok := s.Users[User{SessionUUID: sessionUUID}]
 	//if not found send error
 	if !ok {
 		return repository.ErrNotFound
@@ -73,35 +74,36 @@ func (s *InMemoryStorage) AddChat(sessionUuid string, ttl int, readOnly bool, ch
 	lru, _ := lru.New(s.MaxChatSize)
 
 	//Creating new chat as a pointer to add messages directly
-	newChat := &InmemoryChat{
-		SessionUuid: sessionUuid,
+	newChat := &Chat{
+		SessionUUID: sessionUUID,
 		ReadOnly:    readOnly,
-		ChatUuid:    chatUuid,
+		ChatUUID:    chatUUID,
+		TTL:         ttl,
 		Messages:    lru,
 	}
 
 	//Add new chat to lru in storage struct
-	s.ChatsData.Add(chatUuid, newChat)
+	s.ChatsData.Add(chatUUID, newChat)
 	return nil
 }
 
-func (s *InMemoryStorage) AddMessage(sessionUuid string, chatUuid string, messageUuid string, text string) error {
+func (s *Storage) AddMessage(sessionUUID string, chatUUID string, messageUUID string, text string) error {
 
 	//Making message
-	newMessage := InmemoryMessage{
-		SessionUuid: sessionUuid,
-		MessageUuid: messageUuid,
+	newMessage := Message{
+		SessionUUID: sessionUUID,
+		MessageUUID: messageUUID,
 		Text:        text,
 	}
 
 	//Trying to get chat from lru
-	chat, ok := s.ChatsData.Get(chatUuid)
+	chat, ok := s.ChatsData.Get(chatUUID)
 	//send error if not found
 	if !ok {
 		return repository.ErrNotFound
 	}
 	s.mu.RLock()
-	_, ok = s.Users[InmemoryUser{SessionUuid: sessionUuid}]
+	_, ok = s.Users[User{SessionUUID: sessionUUID}]
 	s.mu.RUnlock()
 	//send error if not found
 	if !ok {
@@ -109,21 +111,21 @@ func (s *InMemoryStorage) AddMessage(sessionUuid string, chatUuid string, messag
 	}
 
 	//type assert retrieved chat
-	chatAsserted := chat.(*InmemoryChat)
+	chatAsserted := chat.(*Chat)
 
 	//check if we can send message to chat
-	if chatAsserted.ReadOnly && chatAsserted.SessionUuid != sessionUuid {
+	if chatAsserted.ReadOnly && chatAsserted.SessionUUID != sessionUUID {
 		return repository.ErrProhibited
 	}
 
 	//add new message to chat
-	chatAsserted.Messages.Add(messageUuid, newMessage)
+	chatAsserted.Messages.Add(messageUUID, newMessage)
 	return nil
 }
 
-func (s *InMemoryStorage) GetHistory(chatUuid string) (history []repository.Message, err error) {
-	//get chat with provided chatUuid
-	chat, ok := s.ChatsData.Get(chatUuid)
+func (s *Storage) GetHistory(chatUUID string) (history []repository.Message, err error) {
+	//get chat with provided chatUUID
+	chat, ok := s.ChatsData.Get(chatUUID)
 
 	//if not found, return error
 	if !ok {
@@ -131,24 +133,24 @@ func (s *InMemoryStorage) GetHistory(chatUuid string) (history []repository.Mess
 	}
 
 	//type assert chat
-	chatAsserted := chat.(*InmemoryChat)
+	chatAsserted := chat.(*Chat)
 
 	//getting keys from chat to iterate
 	keys := chatAsserted.Messages.Keys()
 
 	//slice for storing ChatMessages
-	var msgArr []repository.Message
+	msgArr := make([]repository.Message, 0, len(keys))
 
 	//iterating through retrieved keys and getting all Message struct with it
 	for _, v := range keys {
 		//get chat struct with key
 		msg, _ := chatAsserted.Messages.Get(v)
 		//type assert gotten message
-		msgAsserted := msg.(InmemoryMessage)
+		msgAsserted := msg.(Message)
 		//creating struct for proto response and append it to slice
 		msgArr = append(msgArr, repository.Message{
-			SessionUuid: msgAsserted.SessionUuid,
-			MessageUuid: msgAsserted.MessageUuid,
+			SessionUUID: msgAsserted.SessionUUID,
+			MessageUUID: msgAsserted.MessageUUID,
 			Text:        msgAsserted.Text,
 		})
 	}
@@ -156,25 +158,25 @@ func (s *InMemoryStorage) GetHistory(chatUuid string) (history []repository.Mess
 	return msgArr, nil
 }
 
-func (s *InMemoryStorage) DeleteChat(sessionUuid string, chatUuid string) error {
+func (s *Storage) DeleteChat(sessionUUID string, chatUUID string) error {
 	//Check if chat is present
-	chat, ok := s.ChatsData.Get(chatUuid)
+	chat, ok := s.ChatsData.Get(chatUUID)
 	if !ok {
 		return repository.ErrNotFound
 	}
 
 	//type Assertion
-	chatAsserted := chat.(*InmemoryChat)
+	chatAsserted := chat.(*Chat)
 	//Deletion is can be made only by chat Creator
-	if chatAsserted.SessionUuid != sessionUuid {
+	if chatAsserted.SessionUUID != sessionUUID {
 		return repository.ErrProhibited
 	}
 	//Delete chat
-	s.ChatsData.Remove(chatUuid)
+	s.ChatsData.Remove(chatUUID)
 	return nil
 }
 
-func (s *InMemoryStorage) GetActiveChats() (chats []repository.Chat) {
+func (s *Storage) GetActiveChats() (chats []repository.Chat) {
 	//Get keys for all chats in lru
 	chatKeys := s.ChatsData.Keys()
 
@@ -185,14 +187,14 @@ func (s *InMemoryStorage) GetActiveChats() (chats []repository.Chat) {
 		chat, _ := s.ChatsData.Get(key)
 
 		//type assert
-		chatAsserted := *chat.(*InmemoryChat)
+		chatAsserted := *chat.(*Chat)
 
 		//Create Chat instance and append it to returned slice
 		chats = append(chats, repository.Chat{
-			SessionUuid: chatAsserted.SessionUuid,
-			ChatUuid:    chatAsserted.ChatUuid,
+			SessionUUID: chatAsserted.SessionUUID,
+			ChatUUID:    chatAsserted.ChatUUID,
 			ReadOnly:    chatAsserted.ReadOnly,
-			Ttl:         chatAsserted.Ttl,
+			TTL:         chatAsserted.TTL,
 		})
 	}
 	return chats

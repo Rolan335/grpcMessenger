@@ -60,6 +60,12 @@ message GetActiveChatsResponse{
     repeated Chat chats = 1;
 }
 
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+    string status = 1;
+}
+
 service MessengerService {
     rpc InitSession(InitSessionRequest) returns (InitSessionResponse){
         option (google.api.http) = {
@@ -89,4 +95,5 @@ service MessengerService {
             get: "/v1/chats"
         };
     };
+    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
 }

@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type PostgresConfig struct {
+type Config struct {
 	Host       string
 	User       string
 	Password   string
@@ -19,37 +19,37 @@ type PostgresConfig struct {
 	FreshStart bool
 }
 
-type PostgresStorage struct {
+type Storage struct {
 	MaxChats    int
 	MaxChatSize int
 	Db          *gorm.DB
 }
 
 type Message struct {
-	MessageUuid string `gorm:"type:uuid;primaryKey;uniqueIndex"`
-	SessionUuid string `gorm:"type:uuid"`
-	ChatUuid    string `gorm:"type:uuid"`
+	MessageUUID string `gorm:"type:UUID;primaryKey;uniqueIndex"`
+	SessionUUID string `gorm:"type:UUID"`
+	ChatUUID    string `gorm:"type:UUID;index:idx_chat_uuid_created_at"`
 	Text        string
-	CreatedAt   time.Time `gorm:"autoCreateTime"`
+	CreatedAt   time.Time `gorm:"autoCreateTime;index:idx_chat_uuid_created_at"`
 }
 
 type Chat struct {
-	ChatUuid    string `gorm:"type:uuid;primaryKey;uniqueIndex"`
-	SessionUuid string `gorm:"type:uuid"`
+	ChatUUID    string `gorm:"type:UUID;primaryKey;uniqueIndex"`
+	SessionUUID string `gorm:"type:UUID"`
 	ReadOnly    bool
-	Ttl         int
-	Message     []Message `gorm:"foreignKey:ChatUuid;references:ChatUuid"`
+	TTL         int
+	Message     []Message `gorm:"foreignKey:ChatUUID;references:ChatUUID"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
 }
 
 type User struct {
-	SessionUuid string `gorm:"type:uuid;primaryKey;uniqueIndex"`
-	Chat        []Chat `gorm:"foreignKey:SessionUuid;references:SessionUuid"`
+	SessionUUID string `gorm:"type:UUID;primaryKey;uniqueIndex"`
+	Chat        []Chat `gorm:"foreignKey:SessionUUID;references:SessionUUID"`
 }
 
 var db *gorm.DB
 
-func NewPostgresStorage(cfg PostgresConfig, maxChats int, maxChatSize int) *PostgresStorage {
+func NewStorage(cfg Config, maxChats int, maxChatSize int) *Storage {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
 		cfg.Host, cfg.User, cfg.Password, cfg.Dbname, cfg.Port)
 	var err error
@@ -67,32 +67,32 @@ func NewPostgresStorage(cfg PostgresConfig, maxChats int, maxChatSize int) *Post
 	if err != nil {
 		panic("can't do migrations: " + err.Error())
 	}
-	return &PostgresStorage{
+	return &Storage{
 		MaxChats:    maxChats,
 		MaxChatSize: maxChatSize,
 		Db:          db,
 	}
 }
 
-func (p *PostgresStorage) AddSession(sessionUuid string) {
-	p.Db.Create(&User{SessionUuid: sessionUuid})
+func (p *Storage) AddSession(sessionUUID string) {
+	p.Db.Create(&User{SessionUUID: sessionUUID})
 }
 
-func (p *PostgresStorage) AddChat(sessionUuid string, ttl int, readOnly bool, chatUuid string) error {
+func (p *Storage) AddChat(sessionUUID string, ttl int, readOnly bool, chatUUID string) error {
 	tx := p.Db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
 		}
 	}()
-	if err := tx.First(&User{}, "session_uuid = ?", sessionUuid).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+	if err := tx.First(&User{}, "session_UUID = ?", sessionUUID).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		tx.Rollback()
 		return repository.ErrNotFound
 	}
 	if err := tx.Create(&Chat{
-		ChatUuid:    chatUuid,
-		SessionUuid: sessionUuid,
-		Ttl:         ttl,
+		ChatUUID:    chatUUID,
+		SessionUUID: sessionUUID,
+		TTL:         ttl,
 		ReadOnly:    readOnly,
 	}).Error; err != nil {
 		tx.Rollback()
@@ -134,19 +134,19 @@ func deleteAllTables(db *gorm.DB) error {
 	return nil
 }
 
-func (p *PostgresStorage) DeleteLeastChats(tx *gorm.DB, chatsCount int64) {
+func (p *Storage) DeleteLeastChats(tx *gorm.DB, chatsCount int64) {
 	var chats []Chat
 	tx.
 		Order("created_at ASC").
 		Limit(int(chatsCount - int64(p.MaxChatSize))).
 		Find(&chats)
 	for _, v := range chats {
-		tx.Delete(&Message{}, "chat_uuid = ?", v.ChatUuid)
+		tx.Delete(&Message{}, "chat_UUID = ?", v.ChatUUID)
 		tx.Delete(&v)
 	}
 }
 
-func (p *PostgresStorage) DeleteChat(sessionUuid string, chatUuid string) error {
+func (p *Storage) DeleteChat(sessionUUID string, chatUUID string) error {
 	tx := p.Db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -154,15 +154,15 @@ func (p *PostgresStorage) DeleteChat(sessionUuid string, chatUuid string) error 
 		}
 	}()
 	var chatToDelete Chat
-	if err := tx.First(&chatToDelete, "chat_uuid = ?", chatUuid).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+	if err := tx.First(&chatToDelete, "chat_UUID = ?", chatUUID).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		tx.Rollback()
 		return repository.ErrNotFound
 	}
-	if chatToDelete.SessionUuid != sessionUuid {
+	if chatToDelete.SessionUUID != sessionUUID {
 		tx.Rollback()
 		return repository.ErrProhibited
 	}
-	tx.Delete(&Message{}, "chat_uuid = ?", chatToDelete.ChatUuid)
+	tx.Delete(&Message{}, "chat_UUID = ?", chatToDelete.ChatUUID)
 	tx.Delete(&chatToDelete)
 
 	if err := tx.Commit().Error; err != nil {
@@ -171,7 +171,7 @@ func (p *PostgresStorage) DeleteChat(sessionUuid string, chatUuid string) error 
 
 	return nil
 }
-func (p *PostgresStorage) AddMessage(sessionUuid string, chatUuid string, messageUuid string, message string) error {
+func (p *Storage) AddMessage(sessionUUID string, chatUUID string, messageUUID string, message string) error {
 	tx := p.Db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -179,34 +179,34 @@ func (p *PostgresStorage) AddMessage(sessionUuid string, chatUuid string, messag
 		}
 	}()
 	var chat Chat
-	if err := tx.First(&chat, "chat_uuid = ?", chatUuid).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+	if err := tx.First(&chat, "chat_UUID = ?", chatUUID).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		tx.Rollback()
 		return repository.ErrNotFound
 	}
-	if err := tx.First(&User{}, "session_uuid = ?", sessionUuid).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+	if err := tx.First(&User{}, "session_UUID = ?", sessionUUID).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		tx.Rollback()
 		return repository.ErrUserDoesntExist
 	}
-	if chat.ReadOnly && chat.SessionUuid != sessionUuid {
+	if chat.ReadOnly && chat.SessionUUID != sessionUUID {
 		tx.Rollback()
 		return repository.ErrProhibited
 	}
 	if err := tx.Create(&Message{
-		MessageUuid: messageUuid,
-		SessionUuid: sessionUuid,
-		ChatUuid:    chatUuid,
+		MessageUUID: messageUUID,
+		SessionUUID: sessionUUID,
+		ChatUUID:    chatUUID,
 		Text:        message,
 	}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 	var messageCount int64
-	if err := tx.Model(&Message{}).Where("chat_uuid = ?", chatUuid).Count(&messageCount).Error; err != nil {
+	if err := tx.Model(&Message{}).Where("chat_UUID = ?", chatUUID).Count(&messageCount).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 	if messageCount > int64(p.MaxChatSize) {
-		err := p.DeleteLeastMsg(tx, messageCount, chatUuid)
+		err := p.DeleteLeastMsg(tx, messageCount, chatUUID)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -218,9 +218,9 @@ func (p *PostgresStorage) AddMessage(sessionUuid string, chatUuid string, messag
 	return nil
 }
 
-func (p *PostgresStorage) DeleteLeastMsg(tx *gorm.DB, messageCount int64, chatUuid string) error {
+func (p *Storage) DeleteLeastMsg(tx *gorm.DB, messageCount int64, chatUUID string) error {
 	var messages []Message
-	if err := tx.Where("chat_uuid = ?", chatUuid).
+	if err := tx.Where("chat_UUID = ?", chatUUID).
 		Order("created_at ASC").
 		Limit(int(messageCount - int64(p.MaxChatSize))).
 		Find(&messages).Error; err != nil {
@@ -234,29 +234,32 @@ func (p *PostgresStorage) DeleteLeastMsg(tx *gorm.DB, messageCount int64, chatUu
 	return nil
 }
 
-func (p *PostgresStorage) GetHistory(chatUuid string) (history []repository.Message, err error) {
-	if err := p.Db.First(&Chat{}, "chat_uuid = ?", chatUuid).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+func (p *Storage) GetHistory(chatUUID string) (history []repository.Message, err error) {
+	if err := p.Db.First(&Chat{}, "chat_UUID = ?", chatUUID).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, repository.ErrNotFound
 	}
 	var messages []Message
-	p.Db.Where("chat_uuid = ?", chatUuid).Order("created_at ASC").Find(&messages)
+	p.Db.Select("session_uuid, message_uuid, text").
+		Where("chat_UUID = ?", chatUUID).
+		Order("created_at ASC").
+		Find(&messages)
 	for _, v := range messages {
 		history = append(history, repository.Message{
-			SessionUuid: v.SessionUuid,
-			MessageUuid: v.MessageUuid,
+			SessionUUID: v.SessionUUID,
+			MessageUUID: v.MessageUUID,
 			Text:        v.Text,
 		})
 	}
 	return
 }
-func (p *PostgresStorage) GetActiveChats() (chats []repository.Chat) {
+func (p *Storage) GetActiveChats() (chats []repository.Chat) {
 	var chatsToFind []Chat
 	p.Db.Find(&chatsToFind)
 	for _, v := range chatsToFind {
 		chats = append(chats, repository.Chat{
-			SessionUuid: v.SessionUuid,
-			ChatUuid:    v.ChatUuid,
-			Ttl:         v.Ttl,
+			SessionUUID: v.SessionUUID,
+			ChatUUID:    v.ChatUUID,
+			TTL:         v.TTL,
 			ReadOnly:    v.ReadOnly,
 		})
 	}
@@ -270,4 +273,13 @@ func GracefulStop() {
 	sqlDb, _ := db.DB()
 	sqlDb.Close()
 	fmt.Println("postgres stopped successfully")
+}
+
+// nolint
+func Ping() error {
+	sqlDb, err := db.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDb.Ping()
 }

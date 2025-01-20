@@ -53,18 +53,18 @@ func parseConfig() config.ServiceCfg {
 	)
 }
 
-// test for all repositories
+// test for all storages
 func TestRepositories(t *testing.T) {
 	testCases := []string{"inmemory", "redis", "postgres"}
-	logger := logger.LoggerInit("dev", &noOpWriter{})
+	logger := logger.Init("dev", &noOpWriter{})
 	for _, v := range testCases {
 		t.Run(v, func(t *testing.T) {
 			serverConfig := parseConfig()
 			serverConfig.StorageType = v
 			server := app.NewServiceServer(serverConfig, logger)
 			defer server.GracefulStop()
-			go server.MustStartGrpc()
-			conn, err := grpc.NewClient(serverConfig.Address+serverConfig.PortGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			go server.MustStartGRPC()
+			conn, err := grpc.NewClient(serverConfig.Address+serverConfig.PortGRPC, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			if err != nil {
 				panic(err)
 			}
@@ -189,7 +189,7 @@ func TestRepositories(t *testing.T) {
 					Ttl:         -1,
 					ReadOnly:    false,
 				})
-				a.ErrorIs(err, status.Error(codes.InvalidArgument, messenger.ErrInvalidSessionUuid.Error()), "should return proper mistake")
+				a.ErrorIs(err, status.Error(codes.InvalidArgument, messenger.ErrInvalidSessionUUID.Error()), "should return proper mistake")
 				resp, _ := c.GetActiveChats(ctx, &proto.GetActiveChatsRequest{})
 				a.Equal(1, len(resp.GetChats()), "chat should not be created")
 			})
@@ -201,7 +201,7 @@ func TestRepositories(t *testing.T) {
 					SessionUuid: uuid,
 					Message:     "hello",
 				})
-				a.ErrorIs(err, status.Error(codes.InvalidArgument, messenger.ErrInvalidSessionUuid.Error()), "should return proper mistake")
+				a.ErrorIs(err, status.Error(codes.InvalidArgument, messenger.ErrInvalidSessionUUID.Error()), "should return proper mistake")
 			})
 
 			t.Run("ChatNotFound", func(t *testing.T) {
@@ -227,13 +227,13 @@ func TestRepositories(t *testing.T) {
 
 // standart test with inmemory
 func TestServer(t *testing.T) {
-	logger := logger.LoggerInit("dev", &noOpWriter{})
+	logger := logger.Init("dev", &noOpWriter{})
 	serverConfig := parseConfig()
 	fmt.Println(serverConfig)
 	server := app.NewServiceServer(serverConfig, logger)
 	defer server.GracefulStop()
-	go server.MustStartGrpc()
-	conn, err := grpc.NewClient(serverConfig.Address+serverConfig.PortGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	go server.MustStartGRPC()
+	conn, err := grpc.NewClient(serverConfig.Address+serverConfig.PortGRPC, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
@@ -358,7 +358,7 @@ func TestServer(t *testing.T) {
 			Ttl:         -1,
 			ReadOnly:    false,
 		})
-		a.ErrorIs(err, status.Error(codes.InvalidArgument, messenger.ErrInvalidSessionUuid.Error()), "should return proper mistake")
+		a.ErrorIs(err, status.Error(codes.InvalidArgument, messenger.ErrInvalidSessionUUID.Error()), "should return proper mistake")
 		resp, _ := c.GetActiveChats(ctx, &proto.GetActiveChatsRequest{})
 		a.Equal(1, len(resp.GetChats()), "chat should not be created")
 	})
@@ -370,7 +370,7 @@ func TestServer(t *testing.T) {
 			SessionUuid: uuid,
 			Message:     "hello",
 		})
-		a.ErrorIs(err, status.Error(codes.InvalidArgument, messenger.ErrInvalidSessionUuid.Error()), "should return proper mistake")
+		a.ErrorIs(err, status.Error(codes.InvalidArgument, messenger.ErrInvalidSessionUUID.Error()), "should return proper mistake")
 	})
 
 	t.Run("ChatNotFound", func(t *testing.T) {

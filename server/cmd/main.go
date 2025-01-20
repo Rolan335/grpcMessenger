@@ -50,8 +50,8 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 	app := app.NewServiceServer(serverConfig, logger)
-	go app.MustStartGrpc()
-	go app.MustStartHttp(ctx)
+	go app.MustStartGRPC()
+	go app.MustStartHTTP(ctx)
 	<-ctx.Done()
 	app.GracefulStop()
 }
