@@ -56,12 +56,12 @@ func parseConfig() config.ServiceCfg {
 // test for all storages
 func TestRepositories(t *testing.T) {
 	testCases := []string{"inmemory", "redis", "postgres"}
-	logger := logger.Init("dev", &noOpWriter{})
+	logger.Init("dev", &noOpWriter{})
 	for _, v := range testCases {
 		t.Run(v, func(t *testing.T) {
 			serverConfig := parseConfig()
 			serverConfig.StorageType = v
-			server := app.NewServiceServer(serverConfig, logger)
+			server := app.NewServiceServer(serverConfig)
 			defer server.GracefulStop()
 			go server.MustStartGRPC()
 			conn, err := grpc.NewClient(serverConfig.Address+serverConfig.PortGRPC, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -227,10 +227,10 @@ func TestRepositories(t *testing.T) {
 
 // standart test with inmemory
 func TestServer(t *testing.T) {
-	logger := logger.Init("dev", &noOpWriter{})
+	logger.Init("dev", &noOpWriter{})
 	serverConfig := parseConfig()
 	fmt.Println(serverConfig)
-	server := app.NewServiceServer(serverConfig, logger)
+	server := app.NewServiceServer(serverConfig)
 	defer server.GracefulStop()
 	go server.MustStartGRPC()
 	conn, err := grpc.NewClient(serverConfig.Address+serverConfig.PortGRPC, grpc.WithTransportCredentials(insecure.NewCredentials()))

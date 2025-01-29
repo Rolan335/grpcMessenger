@@ -17,15 +17,13 @@ type Stringer interface {
 }
 
 //nolint:wrapcheck
-func Log(logger logger.Logger) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		//making request
-		resp, err := handler(ctx, req)
-		//log request
-		if ctx.Err() == context.DeadlineExceeded {
-			err = status.Error(codes.DeadlineExceeded, "context deadline exceeded")
-		}
-		logger.LogRequest(ctx, info.FullMethod, req.(Stringer).String(), resp.(Stringer).String(), err)
-		return resp, err
+func Log(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	//making request
+	resp, err := handler(ctx, req)
+	//log request
+	if ctx.Err() == context.DeadlineExceeded {
+		err = status.Error(codes.DeadlineExceeded, "context deadline exceeded")
 	}
+	logger.LogRequest(ctx, info.FullMethod, req.(Stringer).String(), resp.(Stringer).String(), err)
+	return resp, err
 }

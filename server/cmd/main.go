@@ -1,4 +1,4 @@
-//go:generate protoc --grpc-gateway_out=../pkg/proto --proto_path=../pkg/proto --go_out=../pkg/proto --go-grpc_out=../pkg/proto --go_opt=paths=source_relative ../pkg/proto/messenger.proto
+//go:generate protoc --grpc-gateway_out=../pkg/proto --proto_path=../api --go_out=../pkg/proto --go-grpc_out=../pkg/proto --go_opt=paths=source_relative ../api/messenger.proto
 package main
 
 import (
@@ -25,11 +25,11 @@ func main() {
 
 	maxChatSize, err := strconv.Atoi(os.Getenv("APP_MAXCHATSIZE"))
 	if err != nil {
-		panic("failed to parse maxChatSize .env:" + err.Error())
+		panic("failed to parse APP_MAXCHATSIZE .env:" + err.Error())
 	}
 	maxChats, err := strconv.Atoi(os.Getenv("APP_MAXCHATS"))
 	if err != nil {
-		panic("failed to parse maxChats .env:" + err.Error())
+		panic("failed to parse APP_MAXCHATS .env:" + err.Error())
 	}
 	serverConfig := config.MustConfigInit(
 		os.Getenv("APP_ADDRESS"),
@@ -42,16 +42,17 @@ func main() {
 	)
 
 	//initializing logger
-	logger := logger.Init(serverConfig.Env, os.Stdout)
+	logger.Init(serverConfig.Env, os.Stdout)
 
 	//registering metrics
 	metric.MustInit()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
-	app := app.NewServiceServer(serverConfig, logger)
-	go app.MustStartGRPC()
-	go app.MustStartHTTP(ctx)
+	app := app.NewServiceServer(serverConfig)
+	app.MustStartGRPC()
+	app.MustStartHTTP(ctx)
+
 	<-ctx.Done()
 	app.GracefulStop()
 }

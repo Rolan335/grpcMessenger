@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Rolan335/grpcMessenger/server/internal/repository"
+	"github.com/Rolan335/grpcMessenger/server/internal/repository/entities"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -154,7 +156,7 @@ func getChatFromKey(ctx context.Context, r *Storage, chatUUID string) (Chat, err
 	return chatUnmarshalled, nil
 }
 
-func (r *Storage) GetHistory(chatUUID string) (history []repository.Message, err error) {
+func (r *Storage) GetHistory(chatUUID string) (history []entities.Message, err error) {
 	ctx := context.Background()
 	messages, err := r.client.LRange(ctx, fmt.Sprintf("%s%s%s", keyPrefixChat, chatUUID, keyPostfixMessages), 0, -1).Result()
 	if errors.Is(err, redis.Nil) {
@@ -166,7 +168,7 @@ func (r *Storage) GetHistory(chatUUID string) (history []repository.Message, err
 		if err != nil {
 			return nil, fmt.Errorf("redis: %w", err)
 		}
-		history = append(history, repository.Message{
+		history = append(history, entities.Message{
 			SessionUUID: message.SessionUUID,
 			MessageUUID: message.MessageUUID,
 			Text:        message.Text,
@@ -174,12 +176,12 @@ func (r *Storage) GetHistory(chatUUID string) (history []repository.Message, err
 	}
 	return
 }
-func (r *Storage) GetActiveChats() (chats []repository.Chat) {
+func (r *Storage) GetActiveChats() (chats []entities.Chat) {
 	ctx := context.Background()
 	chatsUUID := r.client.LRange(ctx, keyActiveChats, 0, -1).Val()
 	for _, v := range chatsUUID {
 		chat, _ := getChatFromKey(ctx, r, v)
-		chats = append(chats, repository.Chat{
+		chats = append(chats, entities.Chat{
 			SessionUUID: chat.SessionUUID,
 			ChatUUID:    chat.ChatUUID,
 			ReadOnly:    chat.ReadOnly,
@@ -199,5 +201,7 @@ func GracefulStop() {
 
 // nolint
 func Ping() error {
-	return rdb.Ping(context.Background()).Err()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	return rdb.Ping(ctx).Err()
 }

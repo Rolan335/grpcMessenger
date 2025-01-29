@@ -7,8 +7,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Rolan335/grpcMessenger/server/internal/config"
-	"github.com/Rolan335/grpcMessenger/server/internal/logger"
+	"github.com/Rolan335/grpcMessenger/server/internal/kafka"
 	"github.com/Rolan335/grpcMessenger/server/internal/service/messenger"
 	"github.com/Rolan335/grpcMessenger/server/pkg/proto"
 
@@ -22,9 +21,9 @@ type Server struct {
 }
 
 // Server creation. Initializing storage and returning service
-func NewServer(config config.ServiceCfg, logger logger.Logger) Server {
+func NewServer(storage messenger.Storage) Server {
 	return Server{
-		m: messenger.NewMessenger(config, logger),
+		m: messenger.NewMessenger(storage),
 	}
 }
 
@@ -50,6 +49,9 @@ func (s Server) CreateChat(_ context.Context, r *proto.CreateChatRequest) (*prot
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	//sending msg to kafka
+	kafka.CreateChatEvent(ChatUUID)
 
 	//Creating, sending response
 	response := &proto.CreateChatResponse{ChatUuid: ChatUUID}

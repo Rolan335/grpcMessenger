@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/Rolan335/grpcMessenger/server/internal/repository"
+	"github.com/Rolan335/grpcMessenger/server/internal/repository/entities"
 
 	lru "github.com/hashicorp/golang-lru"
 )
@@ -123,7 +124,7 @@ func (s *Storage) AddMessage(sessionUUID string, chatUUID string, messageUUID st
 	return nil
 }
 
-func (s *Storage) GetHistory(chatUUID string) (history []repository.Message, err error) {
+func (s *Storage) GetHistory(chatUUID string) (history []entities.Message, err error) {
 	//get chat with provided chatUUID
 	chat, ok := s.ChatsData.Get(chatUUID)
 
@@ -139,7 +140,7 @@ func (s *Storage) GetHistory(chatUUID string) (history []repository.Message, err
 	keys := chatAsserted.Messages.Keys()
 
 	//slice for storing ChatMessages
-	msgArr := make([]repository.Message, 0, len(keys))
+	msgArr := make([]entities.Message, 0, len(keys))
 
 	//iterating through retrieved keys and getting all Message struct with it
 	for _, v := range keys {
@@ -148,7 +149,7 @@ func (s *Storage) GetHistory(chatUUID string) (history []repository.Message, err
 		//type assert gotten message
 		msgAsserted := msg.(Message)
 		//creating struct for proto response and append it to slice
-		msgArr = append(msgArr, repository.Message{
+		msgArr = append(msgArr, entities.Message{
 			SessionUUID: msgAsserted.SessionUUID,
 			MessageUUID: msgAsserted.MessageUUID,
 			Text:        msgAsserted.Text,
@@ -176,7 +177,7 @@ func (s *Storage) DeleteChat(sessionUUID string, chatUUID string) error {
 	return nil
 }
 
-func (s *Storage) GetActiveChats() (chats []repository.Chat) {
+func (s *Storage) GetActiveChats() (chats []entities.Chat) {
 	//Get keys for all chats in lru
 	chatKeys := s.ChatsData.Keys()
 
@@ -190,7 +191,7 @@ func (s *Storage) GetActiveChats() (chats []repository.Chat) {
 		chatAsserted := *chat.(*Chat)
 
 		//Create Chat instance and append it to returned slice
-		chats = append(chats, repository.Chat{
+		chats = append(chats, entities.Chat{
 			SessionUUID: chatAsserted.SessionUUID,
 			ChatUUID:    chatAsserted.ChatUUID,
 			ReadOnly:    chatAsserted.ReadOnly,
